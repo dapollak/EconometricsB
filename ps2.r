@@ -85,7 +85,7 @@ monte_carlo_fe <- function(
 
         ## Fixed Effects
         fe_reg1 <- plm(
-            y ~ x, dat = pdat, model = "within", effect = "individual"
+            y ~ x, data = dat, model = "within", effect = "individual"
         )
 
         # No Clustered SE
@@ -98,7 +98,7 @@ monte_carlo_fe <- function(
             abs(summary(fe_reg1, rob_vcov1)$coefficients[3]) >= critical_value
 
         ## First Difference
-        fd_reg1 <- plm(y ~ x, dat = pdat, model = "fd")
+        fd_reg1 <- plm(y ~ x, data = pdat, model = "fd")
 
         # No Clustered SE
         rejection_table$fd_no_corr[r] <-
