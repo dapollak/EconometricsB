@@ -57,7 +57,7 @@ monte_carlo_pooled <- function(
 
     return(betas)
 }
-betas <- monte_carlo_pooled(250, 20, 5, 0, 0, 0.02, 200)
+# betas <- monte_carlo_pooled(250, 20, 5, 0, 0, 0.02, 200)
 
 #### A3
 monte_carlo_fe <- function(
@@ -89,7 +89,7 @@ monte_carlo_fe <- function(
         )
 
         # No Clustered SE
-        rejection_table$fe_no_corr[r] <- 
+        rejection_table$fe_no_corr[r] <-
             abs(summary(fe_reg1)$coefficients[3]) >= critical_value
 
         # Clustered SE
