@@ -23,7 +23,7 @@ simulate_data <- function(
         group_by(id) %>%
         mutate(
             tau = tau_vec[cur_group_id()],
-            c = rho_tau * tau + rnorm(1, 0, 0.1),
+            c = rho_tau * tau + rnorm(1, 0, sd),
             x = ifelse(year >= floor(tau), 1, 0),
             u = simulate_error(n_periods = n(), rho = rho_u)
         ) %>%
