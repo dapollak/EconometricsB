@@ -2,7 +2,7 @@ library(dplyr)
 library(plm)
 
 simulate_data <- function(
-    individuals, periods, alpha, beta, rho_u, rho_tau, tau_vec = NULL
+    individuals, periods, alpha, beta, rho_u, rho_tau, tau_vec
 ) {
     # Panel data frame
     dat <- expand.grid(1:individuals, 1:periods)
@@ -22,7 +22,7 @@ simulate_data <- function(
         arrange(id, year) %>%
         group_by(id) %>%
         mutate(
-            tau = ifelse(is.null(tau_vec), runif(1, 2, periods + 1), tau_vec),
+            tau = tau_vec[cur_group_id()],
             c = rho_tau * tau + rnorm(1, 0, 0.1),
             x = ifelse(year >= floor(tau), 1, 0),
             u = simulate_error(n_periods = n(), rho = rho_u)
@@ -35,8 +35,21 @@ simulate_data <- function(
     return(dat)
 }
 
+monte_carlo <- function(
+    individuals, periods, alpha, beta, rho_u, rho_tau, repeats
+) {
+    tau <-  runif(individuals, 2, periods + 1)
+    for (r in 1:repeats) {
+        dat <- simulate_data(
+            individuals, periods, alpha, beta, rho_u, rho_tau, tau
+        )
+
+        return(dat)
+    }
+}
+
 #### A2
-dat <- simulate_data(250, 20, 5, 0, 0, 0.02)
+dat <- monte_carlo(250, 20, 5, 0, 0, 0.02, 1)
 
 #### A3
 pdat <- pdata.frame(dat, index = c("id", "year"))
