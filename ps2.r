@@ -35,32 +35,7 @@ simulate_data <- function(
     return(dat)
 }
 
-#### A2
-monte_carlo_pooled <- function(
-    individuals,
-    periods,
-    alpha,
-    beta,
-    rho_u,
-    rho_tau,
-    repeats
-) {
-    tau <-  runif(individuals, 2, periods + 1)
-    betas <- rep(0, repeats)
-    for (r in 1:repeats) {
-        dat <- simulate_data(
-            individuals, periods, alpha, beta, rho_u, rho_tau, tau
-        )
-
-        betas[r] <- lm(y ~ x, data = dat)$coefficients["x"]
-    }
-
-    return(betas)
-}
-betas <- monte_carlo_pooled(250, 20, 5, 0, 0, 0.02, 200)
-
-#### A3
-monte_carlo_fe <- function(
+monte_carlo <- function(
     individuals,
     periods,
     alpha,
@@ -71,9 +46,9 @@ monte_carlo_fe <- function(
     critical_value
 ) {
     tau <-  runif(individuals, 2, periods + 1)
-    rejection_table <- data.frame(matrix(NA, nrow = repeats, ncol = 6))
-    colnames(rejection_table) <- c(
-        "fe_no_corr", "fe_corr", "fd_no_corr", "fd_corr", "fe_beta", "fd_beta"
+    results <- data.frame(matrix(NA, nrow = repeats, ncol = 7))
+    colnames(results) <- c(
+        "fe_no_corr", "fe_corr", "fd_no_corr", "fd_corr", "polled_beta", "fe_beta", "fd_beta"
     )
 
     for (r in 1:repeats) {
@@ -81,38 +56,41 @@ monte_carlo_fe <- function(
             individuals, periods, alpha, beta, rho_u, rho_tau, tau
         )
 
+        ## Pooled OLS
+        results$polled_beta[r] <- lm(y ~ x, data = dat)$coefficients["x"]
+
         pdat <- pdata.frame(dat, index = c("id", "year"))
 
         ## Fixed Effects
         fe_reg1 <- plm(
             y ~ x, data = dat, model = "within", effect = "individual"
         )
-        rejection_table$fe_beta[r] <- fe_reg1$coefficients["x"]
+        results$fe_beta[r] <- fe_reg1$coefficients["x"]
 
         # No Clustered SE
-        rejection_table$fe_no_corr[r] <-
+        results$fe_no_corr[r] <-
             abs(summary(fe_reg1)$coefficients[3]) >= critical_value
 
         # Clustered SE
         rob_vcov1 <- vcovHC(fe_reg1, type = "sss", cluster = "group")
-        rejection_table$fe_corr[r] <-
+        results$fe_corr[r] <-
             abs(summary(fe_reg1, rob_vcov1)$coefficients[3]) >= critical_value
 
         ## First Difference
         fd_reg1 <- plm(y ~ x, data = pdat, model = "fd")
-        rejection_table$fd_beta[r] <- fd_reg1$coefficients["x"]
+        results$fd_beta[r] <- fd_reg1$coefficients["x"]
 
         # No Clustered SE
-        rejection_table$fd_no_corr[r] <-
+        results$fd_no_corr[r] <-
             abs(summary(fd_reg1)$coefficients[3]) >= critical_value
 
         # Clustered SE
         rob_vcov2 <- vcovHC(fd_reg1, type = "sss", cluster = "group")
-        rejection_table$fd_corr[r] <-
+        results$fd_corr[r] <-
             abs(summary(fd_reg1, rob_vcov2)$coefficients[3]) >= critical_value
     }
 
-    return(rejection_table)
+    return(results)
 }
 
-rejections <- monte_carlo_fe(250, 20, 5, 0, 0, 0.02, 200, 1.96)
+r <- monte_carlo(250, 20, 5, 0, 0, 0.02, 200, 1.96)
