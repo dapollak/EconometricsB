@@ -23,7 +23,7 @@ simulate_data <- function(
         group_by(id) %>%
         mutate(
             tau = tau_vec[cur_group_id()],
-            c = rho_tau * tau + rnorm(1, 0, sd),
+            c = rho_tau * tau + rnorm(1, 0, 0.1),
             x = ifelse(year >= floor(tau), 1, 0),
             u = simulate_error(n_periods = n(), rho = rho_u)
         ) %>%
@@ -57,7 +57,7 @@ monte_carlo_pooled <- function(
 
     return(betas)
 }
-# betas <- monte_carlo_pooled(250, 20, 5, 0, 0, 0.02, 200)
+betas <- monte_carlo_pooled(250, 20, 5, 0, 0, 0.02, 200)
 
 #### A3
 monte_carlo_fe <- function(
@@ -71,9 +71,9 @@ monte_carlo_fe <- function(
     critical_value
 ) {
     tau <-  runif(individuals, 2, periods + 1)
-    rejection_table <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
+    rejection_table <- data.frame(matrix(NA, nrow = repeats, ncol = 6))
     colnames(rejection_table) <- c(
-        "fe_no_corr", "fe_corr", "fd_no_corr", "fd_corr"
+        "fe_no_corr", "fe_corr", "fd_no_corr", "fd_corr", "fe_beta", "fd_beta"
     )
 
     for (r in 1:repeats) {
@@ -87,6 +87,7 @@ monte_carlo_fe <- function(
         fe_reg1 <- plm(
             y ~ x, data = dat, model = "within", effect = "individual"
         )
+        rejection_table$fe_beta[r] <- fe_reg1$coefficients["x"]
 
         # No Clustered SE
         rejection_table$fe_no_corr[r] <-
@@ -99,6 +100,7 @@ monte_carlo_fe <- function(
 
         ## First Difference
         fd_reg1 <- plm(y ~ x, data = pdat, model = "fd")
+        rejection_table$fd_beta[r] <- fd_reg1$coefficients["x"]
 
         # No Clustered SE
         rejection_table$fd_no_corr[r] <-
