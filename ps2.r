@@ -2,7 +2,7 @@ library(dplyr)
 library(plm)
 
 simulate_data <- function(
-    individuals, periods, alpha, beta, rho_u, rho_tau, tau_vec
+    individuals, periods, alpha, beta, rho_u, rho_tau, tau_vec, gamma = 0
 ) {
     # Panel data frame
     dat <- expand.grid(1:individuals, 1:periods)
@@ -30,7 +30,7 @@ simulate_data <- function(
         ungroup()
     # Generate y according to the DGP
     dat <- dat %>%
-        mutate(y = alpha + beta * x + c + u)
+        mutate(y = alpha + gamma * year + beta * x + c + u)
 
     return(dat)
 }
@@ -43,7 +43,8 @@ monte_carlo <- function(
     rho_u,
     rho_tau,
     repeats,
-    critical_value
+    critical_value,
+    gamma = 0
 ) {
     tau <-  runif(individuals, 2, periods + 1)
     results <- data.frame(matrix(NA, nrow = repeats, ncol = 7))
@@ -93,4 +94,24 @@ monte_carlo <- function(
     return(results)
 }
 
-r <- monte_carlo(250, 20, 5, 0, 0, 0.02, 200, 1.96)
+rmse_calc <- function(beta, beta_vector) {
+    R <- length(beta_vector)
+    result <- (1 / R) * sum((beta_vector - beta)^2)
+    return(result)
+}
+
+rmse_bias <- function(beta, beta_vector) {
+    return(mean(beta_vector) - beta)
+}
+
+rmse_variation <- function(beta, beta_vector) {
+    return((1 / length(beta_vector)) * (sum((mean(beta_vector) - beta_vector)^2)))
+}
+
+r1 <- monte_carlo(250, 20, 5, 0, 0, 0.02, 200, 1.96)
+r2 <- monte_carlo(250, 20, 5, 0, 0.9, 0.02, 200, 1.96)
+r3 <- monte_carlo(250, 20, 5, 0.5, 0, 0.02, 200, 1.96)
+r4 <- monte_carlo(250, 20, 5, 0.5, 0.9, 0.02, 200, 1.96)
+
+r5 <- monte_carlo(250, 20, 5, 0.5, 0, 0.02, 200, 1.96, 0.05)
+r6 <- monte_carlo(250, 20, 5, 0.5, 0.9, 0.02, 200, 1.96, 0.05)
