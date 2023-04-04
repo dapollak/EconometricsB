@@ -105,7 +105,8 @@ rmse_bias <- function(beta, beta_vector) {
 }
 
 rmse_variation <- function(beta, beta_vector) {
-    return((1 / length(beta_vector)) * (sum((mean(beta_vector) - beta_vector)^2)))
+    return((1 / length(beta_vector)) *
+            (sum((mean(beta_vector) - beta_vector)^2)))
 }
 
 # (2 + 3)
