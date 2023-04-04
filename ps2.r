@@ -54,7 +54,7 @@ monte_carlo <- function(
 
     for (r in 1:repeats) {
         dat <- simulate_data(
-            individuals, periods, alpha, beta, rho_u, rho_tau, tau
+            individuals, periods, alpha, beta, rho_u, rho_tau, tau, gamma
         )
 
         ## Pooled OLS
@@ -108,10 +108,14 @@ rmse_variation <- function(beta, beta_vector) {
     return((1 / length(beta_vector)) * (sum((mean(beta_vector) - beta_vector)^2)))
 }
 
+# (2 + 3)
 r1 <- monte_carlo(250, 20, 5, 0, 0, 0.02, 200, 1.96)
 r2 <- monte_carlo(250, 20, 5, 0, 0.9, 0.02, 200, 1.96)
+
+# (4)
 r3 <- monte_carlo(250, 20, 5, 0.5, 0, 0.02, 200, 1.96)
 r4 <- monte_carlo(250, 20, 5, 0.5, 0.9, 0.02, 200, 1.96)
 
+# Part B, (3)
 r5 <- monte_carlo(250, 20, 5, 0.5, 0, 0.02, 200, 1.96, 0.05)
 r6 <- monte_carlo(250, 20, 5, 0.5, 0.9, 0.02, 200, 1.96, 0.05)
