@@ -143,4 +143,4 @@ immg_fe_vcov <- vcovHC(immg_fe_reg, type = "sss", cluster = "group")
 immg_fd_vcov <- vcovHC(immg_fd_reg, type = "sss", cluster = "group")
 
 ## Serial correlation test
-pwfdtest(immg_fd_reg, h0 = "fe")
+pwfdtest(immg_fd_reg, h0 = "fd")
