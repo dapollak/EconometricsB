@@ -113,31 +113,36 @@ rmse_variation <- function(beta, beta_vector) {
 
 # (2 + 3)
 r1 <- monte_carlo(250, 20, 5, 0, 0, 0.02, 200, 1.96)
+print(c(
+    (rmse_bias(0, r1$polled_beta))^2,
+    rmse_variation(0, r1$polled_beta),
+    rmse_calc(0, r1$polled_beta)
+))
 r2 <- monte_carlo(250, 20, 5, 0, 0.9, 0.02, 200, 1.96)
 
 
 # (4)
 r3 <- monte_carlo(250, 20, 5, 0.5, 0, 0.02, 200, 1.96)
 print(c(
-    (rmse_bias(0, r3$fe_beta))^2,
-    rmse_variation(0, r3$fe_beta),
-    rmse_calc(0, r3$fe_beta)
+    (rmse_bias(0.5, r3$fe_beta))^2,
+    rmse_variation(0.5, r3$fe_beta),
+    rmse_calc(0.5, r3$fe_beta)
 ))
 print(c(
-    (rmse_bias(0, r4$fd_beta))^2,
-    rmse_variation(0, r4$fd_beta),
-    rmse_calc(0, r4$fd_beta)
+    (rmse_bias(0.5, r3$fd_beta))^2,
+    rmse_variation(0.5, r3$fd_beta),
+    rmse_calc(0.5, r3$fd_beta)
 ))
 r4 <- monte_carlo(250, 20, 5, 0.5, 0.9, 0.02, 200, 1.96)
 print(c(
-    (rmse_bias(0, r2$fe_beta))^2,
-    rmse_variation(0, r2$fe_beta),
-    rmse_calc(0, r2$fe_beta)
+    (rmse_bias(0.5, r4$fe_beta))^2,
+    rmse_variation(0.5, r4$fe_beta),
+    rmse_calc(0.5, r4$fe_beta)
 ))
 print(c(
-    (rmse_bias(0, r2$fd_beta))^2,
-    rmse_variation(0, r2$fd_beta),
-    rmse_calc(0, r2$fd_beta)
+    (rmse_bias(0.5, r4$fd_beta))^2,
+    rmse_variation(0.5, r4$fd_beta),
+    rmse_calc(0.5, r4$fd_beta)
 ))
 
 # Part B, (3)
