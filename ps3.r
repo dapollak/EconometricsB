@@ -37,9 +37,10 @@ monte_carlo <- function(
     sig_x,
     repeats
 ) {
-    results <- data.frame(matrix(NA, nrow = repeats, ncol = 2))
+    results <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
     colnames(results) <- c(
-        "no_controls_beta", "with_controls_beta"
+        "no_controls_gamma", "with_controls_gamma",
+        "no_controls_reject", "with_controls_reject"
     )
 
     for (r in 1:repeats) {
@@ -47,28 +48,37 @@ monte_carlo <- function(
             individuals, alpha, beta, gamma, sig_u, sig_x
         )
 
-        results$with_controls_beta[r] <- 
-                    lm(y ~ x + t, data = dat)$coefficients["t"]
-        results$no_controls_beta[r] <- lm(y ~ t, data = dat)$coefficients["t"]
+        r1 <- lm(y ~ x + t, data = dat)
+        r2 <- lm(y ~ x + t, data = dat)
+
+        results$with_controls_gamma[r] <- r1$coefficients["t"]
+        results$no_controls_gamma[r] <- lm(y ~ t, data = dat)$coefficients["t"]
+
+        # t-values
+        results$no_controls_reject <- summary(r1)$coefficients[, 3]["t"] > 1.96
+        results$with_controls_reject <- 
+                summary(r2)$coefficients[, 3]["t"] > 1.96
     }
 
     return(results)
 }
 
-rmse_calc <- function(beta, beta_vector) {
-    R <- length(beta_vector)
-    result <- (1 / R) * sum((beta_vector - beta)^2)
-    return(result)
-}
+calc_rmse <- function(parameter, estimator_vector) {
+    results <- data.frame(matrix(NA, nrow = 1, ncol = 3))
+    colnames(results) <- c(
+        "rmse", "bias", "variation"
+    )
 
-rmse_bias <- function(beta, beta_vector) {
-    return(mean(beta_vector) - beta)
-}
+    results$rmse <- (1 / length(estimator_vector)) *
+            sum((estimator_vector - parameter)^2)
+    results$bias <- (mean(estimator_vector) - parameter)^2
+    results$variation <- (1 / length(estimator_vector)) *
+            (sum((mean(estimator_vector) - estimator_vector)^2))
 
-rmse_variation <- function(beta, beta_vector) {
-    return((1 / length(beta_vector)) *
-            (sum((mean(beta_vector) - beta_vector)^2)))
+    return(results)
 }
 
 # d <- simulate_data(50, 8, 1, 0.25, 0.25, 0.25)
 r <- monte_carlo(50, 8, 1, 0.25, 0.25, 0.25, 200)
+rmse1 <- calc_rmse(0.25, r$no_controls_gamma)
+rmse2 <- calc_rmse(0.25, r$with_controls_gamma)
