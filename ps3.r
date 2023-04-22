@@ -4,7 +4,14 @@ library(haven)
 options(scipen = 999)
 
 simulate_data <- function(
-    individuals, alpha, beta, gamma, sig_u, sig_x
+    individuals,
+    alpha,
+    beta,
+    gamma,
+    sig_u,
+    sig_x,
+    throw_lines = 0,
+    throw_per = 0
 ) {
     # data frame
     dat <- expand.grid(1:individuals)
@@ -25,6 +32,15 @@ simulate_data <- function(
             y = alpha + (beta * x) + (gamma * t) + u,
         )
 
+    if (throw_lines > 0) {
+        dat <- dat[-sample(1:individuals, throw_lines), ]
+    }
+
+    if (throw_per > 0) {
+        per <- quantile(dat$y, throw_per)
+        dat <- dat[dat$y >= per, ]
+    }
+
     return(dat)
 }
 
@@ -35,7 +51,9 @@ monte_carlo <- function(
     gamma,
     sig_u,
     sig_x,
-    repeats
+    repeats,
+    throw_lines = 0,
+    throw_per = 0
 ) {
     results <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
     colnames(results) <- c(
@@ -45,7 +63,8 @@ monte_carlo <- function(
 
     for (r in 1:repeats) {
         dat <- simulate_data(
-            individuals, alpha, beta, gamma, sig_u, sig_x
+            individuals, alpha, beta, gamma, sig_u,
+            sig_x, throw_lines, throw_per
         )
 
         r1 <- lm(y ~ x + t, data = dat)
@@ -79,6 +98,16 @@ calc_rmse <- function(parameter, estimator_vector) {
 }
 
 # d <- simulate_data(50, 8, 1, 0.25, 0.25, 0.25)
-r <- monte_carlo(50, 8, 1, 0.25, 0.25, 0.25, 200)
-rmse1 <- calc_rmse(0.25, r$no_controls_gamma)
-rmse2 <- calc_rmse(0.25, r$with_controls_gamma)
+r1 <- monte_carlo(50, 8, 1, 0.25, 0.25, 0.25, 200)
+rmse1 <- calc_rmse(0.25, r1$no_controls_gamma)
+rmse2 <- calc_rmse(0.25, r1$with_controls_gamma)
+
+# 2(a)
+r2 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
+                    throw_lines = floor(0.25 * 50))
+rmse3 <- calc_rmse(0.25, r2$no_controls_gamma)
+
+# 2(b)
+# d <- simulate_data(50, 8, 0, 0.25, 0.25, 0.25, throw_per = 0.25)
+r3 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200, throw_per = 0.25)
+rmse4 <- calc_rmse(0.25, r3$no_controls_gamma)
