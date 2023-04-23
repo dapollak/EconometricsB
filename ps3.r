@@ -88,7 +88,7 @@ monte_carlo <- function(
 
         # t-values
         results$no_controls_reject <- summary(r1)$coefficients[, 3]["t"] > 1.96
-        results$with_controls_reject <- 
+        results$with_controls_reject <-
                 summary(r2)$coefficients[, 3]["t"] > 1.96
     }
 
