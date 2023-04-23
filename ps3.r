@@ -12,7 +12,7 @@ simulate_data <- function(
     sig_x,
     throw_lines = 0,
     throw_per_of_control = 0,
-    throw_of_per = 0
+    throw_per_of_treat = 0
 ) {
     # data frame
     dat <- expand.grid(1:individuals)
@@ -40,14 +40,16 @@ simulate_data <- function(
     if (throw_per_of_control > 0) {
         per <- quantile(dat$y, throw_per_of_control)
 
-        if (throw_of_per) {
-            # rows_to_drop <- dat[dat$y < per, ]
-            # rows_to_drop <- rows_to_drop[sample(
-            #     nrow(rows_to_drop),
-            #     floor(throw_of_per * nrow(rows_to_drop))
-            # ),]
-            # row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
-            # dat <- dat[-row_indices_to_drop, ]
+        if (throw_per_of_treat) {
+            rows_to_drop <- dat[dat$y < per & dat$t == 1, ]
+            rows_to_drop <- rows_to_drop[sample(
+                nrow(rows_to_drop),
+                floor(throw_per_of_treat * nrow(rows_to_drop))
+            ), ]
+            if (nrow(rows_to_drop)) {
+                row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
+                dat <- dat[-row_indices_to_drop, ]
+            }
         } else {
             rows_to_drop <- dat[dat$t == 0 & dat$y < per, ]
             row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
@@ -68,7 +70,7 @@ monte_carlo <- function(
     repeats,
     throw_lines = 0,
     throw_per_of_control = 0,
-    throw_of_per = 0
+    throw_per_of_treat = 0
 ) {
     results <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
     colnames(results) <- c(
@@ -79,7 +81,7 @@ monte_carlo <- function(
     for (r in 1:repeats) {
         dat <- simulate_data(
             individuals, alpha, beta, gamma, sig_u,
-            sig_x, throw_lines, throw_per_of_control, throw_of_per
+            sig_x, throw_lines, throw_per_of_control, throw_per_of_treat
         )
 
         r1 <- lm(y ~ x + t, data = dat)
@@ -129,5 +131,5 @@ rmse4 <- calc_rmse(0.25, r3$no_controls_gamma)
 
 # 3(a)
 r4 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
-                throw_per_of_control = 0.25, throw_of_per = 0.5)
+                throw_per_of_control = 0.25, throw_per_of_treat = 0.5)
 rmse5 <- calc_rmse(0.25, r4$no_controls_gamma)
