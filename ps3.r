@@ -11,7 +11,7 @@ simulate_data <- function(
     sig_u,
     sig_x,
     throw_lines = 0,
-    throw_per = 0,
+    throw_per_of_control = 0,
     throw_of_per = 0
 ) {
     # data frame
@@ -37,19 +37,21 @@ simulate_data <- function(
         dat <- dat[-sample(1:individuals, throw_lines), ]
     }
 
-    if (throw_per > 0) {
-        per <- quantile(dat$y, throw_per)
+    if (throw_per_of_control > 0) {
+        per <- quantile(dat$y, throw_per_of_control)
 
         if (throw_of_per) {
-            rows_to_drop <- dat[dat$y < per, ]
-            rows_to_drop <- rows_to_drop[sample(
-                nrow(rows_to_drop),
-                floor(throw_of_per * nrow(rows_to_drop))
-            ),]
+            # rows_to_drop <- dat[dat$y < per, ]
+            # rows_to_drop <- rows_to_drop[sample(
+            #     nrow(rows_to_drop),
+            #     floor(throw_of_per * nrow(rows_to_drop))
+            # ),]
+            # row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
+            # dat <- dat[-row_indices_to_drop, ]
+        } else {
+            rows_to_drop <- dat[dat$t == 0 & dat$y < per, ]
             row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
             dat <- dat[-row_indices_to_drop, ]
-        } else {
-            dat <- dat[dat$y >= per, ]
         }
     }
 
@@ -65,7 +67,7 @@ monte_carlo <- function(
     sig_x,
     repeats,
     throw_lines = 0,
-    throw_per = 0,
+    throw_per_of_control = 0,
     throw_of_per = 0
 ) {
     results <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
@@ -77,7 +79,7 @@ monte_carlo <- function(
     for (r in 1:repeats) {
         dat <- simulate_data(
             individuals, alpha, beta, gamma, sig_u,
-            sig_x, throw_lines, throw_per, throw_of_per
+            sig_x, throw_lines, throw_per_of_control, throw_of_per
         )
 
         r1 <- lm(y ~ x + t, data = dat)
@@ -121,11 +123,11 @@ r2 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
 rmse3 <- calc_rmse(0.25, r2$no_controls_gamma)
 
 # 2(b)
-# d <- simulate_data(50, 8, 0, 0.25, 0.25, 0.25, throw_per = 0.25)
-r3 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200, throw_per = 0.25)
+# d <- simulate_data(50, 8, 0, 0.25, 0.25, 0.25, throw_per_of_control = 0.25)
+r3 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200, throw_per_of_control = 0.25)
 rmse4 <- calc_rmse(0.25, r3$no_controls_gamma)
 
 # 3(a)
 r4 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
-                throw_per = 0.25, throw_of_per = 0.5)
+                throw_per_of_control = 0.25, throw_of_per = 0.5)
 rmse5 <- calc_rmse(0.25, r4$no_controls_gamma)
