@@ -11,7 +11,8 @@ simulate_data <- function(
     sig_u,
     sig_x,
     throw_lines = 0,
-    throw_per = 0
+    throw_per = 0,
+    throw_of_per = 0
 ) {
     # data frame
     dat <- expand.grid(1:individuals)
@@ -38,7 +39,18 @@ simulate_data <- function(
 
     if (throw_per > 0) {
         per <- quantile(dat$y, throw_per)
-        dat <- dat[dat$y >= per, ]
+
+        if (throw_of_per) {
+            rows_to_drop <- dat[dat$y < per, ]
+            rows_to_drop <- rows_to_drop[sample(
+                nrow(rows_to_drop),
+                floor(throw_of_per * nrow(rows_to_drop))
+            ),]
+            row_indices_to_drop <- as.numeric(rownames(rows_to_drop))
+            dat <- dat[-row_indices_to_drop, ]
+        } else {
+            dat <- dat[dat$y >= per, ]
+        }
     }
 
     return(dat)
@@ -53,7 +65,8 @@ monte_carlo <- function(
     sig_x,
     repeats,
     throw_lines = 0,
-    throw_per = 0
+    throw_per = 0,
+    throw_of_per = 0
 ) {
     results <- data.frame(matrix(NA, nrow = repeats, ncol = 4))
     colnames(results) <- c(
@@ -64,14 +77,14 @@ monte_carlo <- function(
     for (r in 1:repeats) {
         dat <- simulate_data(
             individuals, alpha, beta, gamma, sig_u,
-            sig_x, throw_lines, throw_per
+            sig_x, throw_lines, throw_per, throw_of_per
         )
 
         r1 <- lm(y ~ x + t, data = dat)
-        r2 <- lm(y ~ x + t, data = dat)
+        r2 <- lm(y ~ t, data = dat)
 
         results$with_controls_gamma[r] <- r1$coefficients["t"]
-        results$no_controls_gamma[r] <- lm(y ~ t, data = dat)$coefficients["t"]
+        results$no_controls_gamma[r] <- r2$coefficients["t"]
 
         # t-values
         results$no_controls_reject <- summary(r1)$coefficients[, 3]["t"] > 1.96
@@ -99,8 +112,8 @@ calc_rmse <- function(parameter, estimator_vector) {
 
 # d <- simulate_data(50, 8, 1, 0.25, 0.25, 0.25)
 r1 <- monte_carlo(50, 8, 1, 0.25, 0.25, 0.25, 200)
-rmse1 <- calc_rmse(0.25, r1$no_controls_gamma)
-rmse2 <- calc_rmse(0.25, r1$with_controls_gamma)
+rmse1 <- calc_rmse(0.25, r1$with_controls_gamma)
+rmse2 <- calc_rmse(0.25, r1$no_controls_gamma)
 
 # 2(a)
 r2 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
@@ -111,3 +124,8 @@ rmse3 <- calc_rmse(0.25, r2$no_controls_gamma)
 # d <- simulate_data(50, 8, 0, 0.25, 0.25, 0.25, throw_per = 0.25)
 r3 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200, throw_per = 0.25)
 rmse4 <- calc_rmse(0.25, r3$no_controls_gamma)
+
+# 3(a)
+r4 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
+                throw_per = 0.25, throw_of_per = 0.5)
+rmse5 <- calc_rmse(0.25, r4$no_controls_gamma)
