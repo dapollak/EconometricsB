@@ -114,3 +114,55 @@ calc_rmse <- function(parameter, estimator_vector) {
     return(results)
 }
 
+build_residual_diff <- function(N, T, fd_residuals) {
+    result <- data.frame(matrix(NA, nrow = N * (T - 2), ncol = 2))
+    colnames(result) <- c("du", "dup")
+    for (i in 1:N) {
+        for (j in 1:(T - 2)) {
+            result[(1 + (i - 1) * (T - 2)) + (j - 1), ] <-
+                    c(
+                        fd_residuals[(1 + (i - 1) * (T - 1)) + j],
+                        fd_residuals[(1 + (i - 1) * (T - 1)) + (j - 1)]
+                    )
+        }
+    }
+
+    return(result)
+}
+
+build_residual_diff2 <- function(N, T, fd_residuals) {
+    result <- data.frame(matrix(NA, nrow = N * (T - 1), ncol = 2))
+    colnames(result) <- c("u", "up")
+    for (i in 1:N) {
+        for (j in 1:(T - 1)) {
+            result[(1 + (i - 1) * (T - 2)) + (j - 1), ] <-
+                    c(
+                        fd_residuals[(1 + (i - 1) * T) + j],
+                        fd_residuals[(1 + (i - 1) * T) + (j - 1)]
+                    )
+        }
+    }
+
+    return(result)
+}
+
+#### Question 2 ####
+pre_data <- read_dta("data/preexperiment.dta")
+pre_pdat <- pdata.frame(pre_data, index = c("id", "t"))
+fd_reg1 <- plm(y ~ x, data = pre_pdat, model = "fd")
+beta1 <- fd_reg1$coefficients["x"]
+
+rr <- build_residual_diff(1431, 4, fd_reg1$residuals)
+res_reg <- lm(du ~ dup - 1, data = rr)
+rho <- res_reg$coefficients["dup"]
+
+## simple way no FE
+
+reg2 <- lm(y ~ x, data = pre_data)
+beta0 <- reg2$coefficients[1]
+beta1 <- reg2$coefficients["x"]
+rr <- build_residual_diff2(1431, 4, reg2$residuals)
+res_reg <- lm(u ~ up - 1, data = rr)
+rho <- res_reg$coefficients["up"]
+var_epsilon <- var(res_reg$residuals)
+var_x <- var(pre_data["x"])
