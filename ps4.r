@@ -114,34 +114,3 @@ calc_rmse <- function(parameter, estimator_vector) {
     return(results)
 }
 
-# d <- simulate_data(50, 8, 1, 0.25, 0.25, 0.25)
-r1 <- monte_carlo(50, 8, 1, 0.25, 0.25, 0.25, 200)
-rmse1 <- calc_rmse(0.25, r1$with_controls_gamma)
-rmse2 <- calc_rmse(0.25, r1$no_controls_gamma)
-
-# 2(a)
-r2 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
-                    throw_lines = floor(0.25 * 50))
-rmse3 <- calc_rmse(0.25, r2$no_controls_gamma)
-
-# 2(b)
-# d <- simulate_data(50, 8, 0, 0.25, 0.25, 0.25, throw_per_of_control = 0.25)
-r3 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200, throw_per_of_control = 0.25)
-rmse4 <- calc_rmse(0.25, r3$no_controls_gamma)
-
-# 3(a)
-r4 <- monte_carlo(50, 8, 0, 0.25, 0.25, 0.25, 200,
-                throw_per_of_control = 0.25, throw_per_of_treat = 0.5)
-rmse5 <- calc_rmse(0.25, r4$no_controls_gamma)
-
-
-function_a <- function(a, b, c) {
-    print("hello")
-    data_in_function <- c(1, 2, 4)
-    print(data_in_function)
-    print(b)
-    print("bye")
-}
-
-function_a(1, 2, 30)
-function_a(10, 25, 34)
