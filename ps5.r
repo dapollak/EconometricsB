@@ -2,6 +2,7 @@ library(dplyr)
 library(plm)
 library(lfe)
 library(haven)
+library(ggplot2)
 options(scipen = 999)
 
 indo_dat <- read_dta("data/Indo_Schooling.dta")
@@ -76,3 +77,18 @@ wage_did <- felm(log_wage ~ treated + program_intensity + treated:program_intens
 
 
 ## Question 2
+qu2_dat <- readRDS("data/df.r")
+
+# (a)
+treatments_by_month <- qu2_dat %>%
+    group_by(month, treatment_month) %>%
+    summarise(
+        avg_outcome = mean(y)
+    )
+
+ggplot(
+    data = treatments_by_month,
+    aes(x = month, y = avg_outcome, group = treatment_month)
+) + geom_line(aes(color = treatment_month)) +
+    geom_vline(xintercept = 5, color = "red", linetype="dashed") +
+    geom_vline(xintercept = 7, color = "red", linetype="dashed")
