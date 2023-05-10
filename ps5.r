@@ -3,6 +3,7 @@ library(plm)
 library(lfe)
 library(haven)
 library(ggplot2)
+library(did)
 options(scipen = 999)
 
 indo_dat <- read_dta("data/Indo_Schooling.dta")
@@ -92,3 +93,19 @@ ggplot(
 ) + geom_line(aes(color = treatment_month)) +
     geom_vline(xintercept = 5, color = "red", linetype="dashed") +
     geom_vline(xintercept = 7, color = "red", linetype="dashed")
+
+# (c)
+
+# TWFE
+qu2_dat$monthF <- factor(qu2_dat$month)
+qu2_dat$monthF <- relevel(qu2_dat$monthF, ref = 5)
+qu2_dat$Dtreat <- ifelse(qu2_dat$treatment_month == 0, 0, 1)
+twfe <- felm(
+    y ~ Dtreat + monthF:Dtreat | monthF,
+    data = qu2_dat
+)
+summary(twfe)
+# Callaway-Sant'anna’s
+model <- att_gt(yname = "y", tname = "month", idname = "id",
+gname = "treatment_month", data = qu2_dat, panel = F)
+aggte(model, type = "dynamic")
