@@ -100,6 +100,7 @@ ggplot(
 qu2_dat$monthF <- factor(qu2_dat$month)
 qu2_dat$monthF <- relevel(qu2_dat$monthF, ref = 5)
 qu2_dat$Dtreat <- ifelse(qu2_dat$treatment_month == 0, 0, 1)
+
 twfe <- felm(
     y ~ Dtreat + monthF:Dtreat | monthF,
     data = qu2_dat
