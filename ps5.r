@@ -6,6 +6,8 @@ library(ggplot2)
 library(did)
 options(scipen = 999)
 
+#### Question 1
+
 indo_dat <- read_dta("data/Indo_Schooling.dta")
 
 ## (B)
@@ -79,6 +81,10 @@ wage_did <- felm(log_wage ~ treated + program_intensity + treated:program_intens
 
 ## Question 2
 qu2_dat <- readRDS("data/df.r")
+gamma <- 0.3
+t1 <- 5
+t2 <- 7
+tau1 <- -0.1
 
 # (a)
 treatments_by_month <- qu2_dat %>%
@@ -91,8 +97,8 @@ ggplot(
     data = treatments_by_month,
     aes(x = month, y = avg_outcome, group = treatment_month)
 ) + geom_line(aes(color = treatment_month)) +
-    geom_vline(xintercept = 5, color = "red", linetype = "dashed") +
-    geom_vline(xintercept = 7, color = "red", linetype = "dashed")
+    geom_vline(xintercept = t1, color = "red", linetype = "dashed") +
+    geom_vline(xintercept = t2, color = "red", linetype = "dashed")
 
 # (c)
 
@@ -118,7 +124,7 @@ twfe <- felm(
 summary(twfe)
 
 did_results <- data.frame(
-    from_treat = -5:7,
+    from_treat = -t1:t2,
     twfe_effect = twfe$coefficients[2:14, 1]
 )
 
@@ -128,11 +134,11 @@ gname = "treatment_month", data = qu2_dat, panel = T)
 w_did_model <- aggte(model, type = "dynamic")
 
 did_treat_5 <- att_gt(yname = "y", tname = "month", idname = "id",
-gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != 7, ], panel = T)
+gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != t2, ], panel = T)
 agg_did_treat_5 <- aggte(did_treat_5, type = "dynamic")
 
 did_treat_7 <- att_gt(yname = "y", tname = "month", idname = "id",
-gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != 5, ], panel = T)
+gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != t1, ], panel = T)
 agg_did_treat_5 <- aggte(did_treat_7, type = "dynamic")
 
 did_results$att_effect <- w_did_model$att.egt
@@ -148,10 +154,10 @@ ggplot(
 # Callaway-Sant'anna’s unbiasness and consistency graph
 
 # real effects
-did_results$dgp_effect_early <- did_results$from_treat -
-                                0.1 * did_results$from_treat^2
-did_results$dgp_effect_later <- 0.3 * (did_results$from_treat -
-                                0.1 * did_results$from_treat^2)
+did_results$dgp_effect_early <- did_results$from_treat +
+                                tau1 * did_results$from_treat^2
+did_results$dgp_effect_later <- gamma * (did_results$from_treat +
+                                tau1 * did_results$from_treat^2)
 ggplot(
     data = did_results,
     aes(x = from_treat)
