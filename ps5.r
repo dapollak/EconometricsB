@@ -108,5 +108,5 @@ twfe <- felm(
 summary(twfe)
 # Callaway-Sant'anna’s
 model <- att_gt(yname = "y", tname = "month", idname = "id",
-gname = "treatment_month", data = qu2_dat, panel = F)
+gname = "treatment_month", data = qu2_dat, panel = T)
 aggte(model, type = "dynamic")
