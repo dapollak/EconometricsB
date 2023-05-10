@@ -121,20 +121,41 @@ did_results <- data.frame(
     from_treat = -5:7,
     twfe_effect = twfe$coefficients[2:14, 1]
 )
-did_results$dgp_effect_early <- (did_results$from_treat - 5) - 0.1 * (did_results$from_treat - 5)^2
-did_results$dgp_effect_later <- 0.3 * ((did_results$from_treat - 7) - 0.1 * (did_results$from_treat - 7)^2)
 
 # Callaway-Sant'anna’s
 model <- att_gt(yname = "y", tname = "month", idname = "id",
 gname = "treatment_month", data = qu2_dat, panel = T)
 w_did_model <- aggte(model, type = "dynamic")
 
+did_treat_5 <- att_gt(yname = "y", tname = "month", idname = "id",
+gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != 7, ], panel = T)
+agg_did_treat_5 <- aggte(did_treat_5, type = "dynamic")
+
+did_treat_7 <- att_gt(yname = "y", tname = "month", idname = "id",
+gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != 5, ], panel = T)
+agg_did_treat_5 <- aggte(did_treat_7, type = "dynamic")
+
 did_results$att_effect <- w_did_model$att.egt
+did_results$att_effect_5 <- c(0, 0, agg_did_treat_5$att.egt)
+did_results$att_effect_7 <- c(agg_did_treat_7$att.egt, 0, 0)
 
 ggplot(
     data = did_results,
     aes(x = from_treat)
-) + geom_line(aes(y = twfe_effect, color = "red")) +
-    geom_line(aes(y = att_effect, color = "blue")) +
-    geom_line(aes(y = dgp_effect_early, color = "green")) +
-    geom_line(aes(y = dgp_effect_later, color = "brown"))
+) + geom_line(aes(y = twfe_effect), color = "red") +
+    geom_line(aes(y = att_effect), color = "blue")
+
+# Callaway-Sant'anna’s unbiasness and consistency graph
+
+# real effects
+did_results$dgp_effect_early <- did_results$from_treat -
+                                0.1 * did_results$from_treat^2
+did_results$dgp_effect_later <- 0.3 * (did_results$from_treat -
+                                0.1 * did_results$from_treat^2)
+ggplot(
+    data = did_results,
+    aes(x = from_treat)
+) + geom_line(aes(y = dgp_effect_early), color = "green") +
+    geom_line(aes(y = dgp_effect_later), color = "brown") +
+    geom_line(aes(y = att_effect_5), color = "pink") +
+    geom_line(aes(y = att_effect_7), color = "orange")
