@@ -91,22 +91,50 @@ ggplot(
     data = treatments_by_month,
     aes(x = month, y = avg_outcome, group = treatment_month)
 ) + geom_line(aes(color = treatment_month)) +
-    geom_vline(xintercept = 5, color = "red", linetype="dashed") +
-    geom_vline(xintercept = 7, color = "red", linetype="dashed")
+    geom_vline(xintercept = 5, color = "red", linetype = "dashed") +
+    geom_vline(xintercept = 7, color = "red", linetype = "dashed")
 
 # (c)
 
 # TWFE
-qu2_dat$monthF <- factor(qu2_dat$month)
-qu2_dat$monthF <- relevel(qu2_dat$monthF, ref = 5)
-qu2_dat$Dtreat <- ifelse(qu2_dat$treatment_month == 0, 0, 1)
+qu2_dat$month_from_treat <- ifelse(
+    qu2_dat$treatment_month == 0,
+    99999,
+    qu2_dat$month - qu2_dat$treatment_month
+)
+qu2_dat$treat <- ifelse(
+    qu2_dat$treatment_month == 0,
+    0,
+    1
+)
+qu2_dat$month_from_treat <- relevel(
+    as.factor(qu2_dat$month_from_treat), ref = "0"
+)
 
 twfe <- felm(
-    y ~ Dtreat + monthF:Dtreat | monthF,
+    y ~ treat + treat:month_from_treat | month + id,
     data = qu2_dat
 )
 summary(twfe)
+
+did_results <- data.frame(
+    from_treat = -5:7,
+    twfe_effect = twfe$coefficients[2:14, 1]
+)
+did_results$dgp_effect_early <- (did_results$from_treat - 5) - 0.1 * (did_results$from_treat - 5)^2
+did_results$dgp_effect_later <- 0.3 * ((did_results$from_treat - 7) - 0.1 * (did_results$from_treat - 7)^2)
+
 # Callaway-Sant'anna’s
 model <- att_gt(yname = "y", tname = "month", idname = "id",
 gname = "treatment_month", data = qu2_dat, panel = T)
-aggte(model, type = "dynamic")
+w_did_model <- aggte(model, type = "dynamic")
+
+did_results$att_effect <- w_did_model$att.egt
+
+ggplot(
+    data = did_results,
+    aes(x = from_treat)
+) + geom_line(aes(y = twfe_effect, color = "red")) +
+    geom_line(aes(y = att_effect, color = "blue")) +
+    geom_line(aes(y = dgp_effect_early, color = "green")) +
+    geom_line(aes(y = dgp_effect_later, color = "brown"))
