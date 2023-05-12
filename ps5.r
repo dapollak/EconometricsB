@@ -9,6 +9,8 @@ options(scipen = 999)
 #### Question 1
 
 indo_dat <- read_dta("data/Indo_Schooling.dta")
+## (A)
+summary(indo_dat)
 
 ## (B)
 
@@ -24,12 +26,15 @@ intense_levels <- intense_levels %>%
         num_schools_avg = mean(num_schools),
         education_avg = mean(education)
     )
+summary(intense_levels)
 
 # (C-b)
 print(
     mean(indo_dat[indo_dat$program_intensity == 1, ]$education) -
     mean(indo_dat[indo_dat$program_intensity == 0, ]$education)
 )
+
+summary(lm(education ~ program_intensity, data = indo_dat))
 
 # (C-c)
 indo_dat_treated <- indo_dat %>%
@@ -42,6 +47,8 @@ print(
     mean(indo_dat_treated[indo_dat_treated$treated == 0, ]$education)
 )
 
+summary(lm(education ~ treated, data = indo_dat_treated))
+
 # (C-d)
 cd <- (
     mean(indo_dat_treated[indo_dat_treated$treated == 1 &
@@ -49,6 +56,7 @@ cd <- (
     mean(indo_dat_treated[indo_dat_treated$treated == 1 &
         indo_dat_treated$program_intensity == 0, ]$education)
 )
+print(cd)
 
 # (C-e)
 ce <- (
@@ -57,6 +65,7 @@ ce <- (
     mean(indo_dat_treated[indo_dat_treated$treated == 0 &
         indo_dat_treated$program_intensity == 0, ]$education)
 )
+print(ce)
 
 # (C-f)
 cf1 <- (
@@ -65,12 +74,19 @@ cf1 <- (
     mean(indo_dat_treated[indo_dat_treated$treated == 0 &
         indo_dat_treated$program_intensity == 1, ]$education)
 )
+print(cf1)
+
 cf2 <- (
     mean(indo_dat_treated[indo_dat_treated$treated == 1 &
         indo_dat_treated$program_intensity == 0, ]$education) -
     mean(indo_dat_treated[indo_dat_treated$treated == 0 &
         indo_dat_treated$program_intensity == 0, ]$education)
 )
+print(cf2)
+
+# (C-g)
+print(ce - cd)
+print(cf2 - cf1)
 
 did1 <- felm(education ~ treated + program_intensity + treated:program_intensity, data = indo_dat_treated)
 
