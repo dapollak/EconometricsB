@@ -12,6 +12,25 @@ indo_dat <- read_dta("data/Indo_Schooling.dta")
 ## (A)
 summary(indo_dat)
 
+# size of cohorts
+print(
+    indo_dat %>%
+    group_by(birth_year) %>%
+    summarise(num_of_people = n())
+)
+
+# size of regions
+print(
+    indo_dat %>%
+    group_by(birth_region) %>%
+    summarise(
+        num_of_people = n(),
+        num_of_schools = indo_dat[indo_dat$birth_region == 
+                            birth_region, ]$num_schools[1],
+        intense = indo_dat[indo_dat$birth_region ==
+                            birth_region, ]$program_intensity[1]
+    )
+)
 ## (B)
 
 reg1 <- lm(log_wage ~ education, data = indo_dat)
@@ -24,9 +43,10 @@ intense_levels <- intense_levels %>%
     group_by(program_intensity) %>%
     summarise(
         num_schools_avg = mean(num_schools),
-        education_avg = mean(education)
+        education_avg = mean(education),
+        num_of_people = n()
     )
-summary(intense_levels)
+print(intense_levels)
 
 # (C-b)
 print(
@@ -88,12 +108,15 @@ print(cf2)
 print(ce - cd)
 print(cf2 - cf1)
 
-did1 <- felm(education ~ treated + program_intensity + treated:program_intensity, data = indo_dat_treated)
+educ_did <- felm(education ~ treated + program_intensity +
+            treated:program_intensity, data = indo_dat_treated)
+summary(educ_did)
 
 
 # (C-j)
-wage_did <- felm(log_wage ~ treated + program_intensity + treated:program_intensity, data = indo_dat_treated)
-
+wage_did <- felm(log_wage ~ treated + program_intensity +
+            treated:program_intensity, data = indo_dat_treated)
+summary(wage_did)
 
 ## Question 2
 qu2_dat <- readRDS("data/df.r")
@@ -155,7 +178,7 @@ agg_did_treat_5 <- aggte(did_treat_5, type = "dynamic")
 
 did_treat_7 <- att_gt(yname = "y", tname = "month", idname = "id",
 gname = "treatment_month", data = qu2_dat[qu2_dat$treatment_month != t1, ], panel = T)
-agg_did_treat_5 <- aggte(did_treat_7, type = "dynamic")
+agg_did_treat_7 <- aggte(did_treat_7, type = "dynamic")
 
 did_results$att_effect <- w_did_model$att.egt
 did_results$att_effect_5 <- c(0, 0, agg_did_treat_5$att.egt)
@@ -164,8 +187,11 @@ did_results$att_effect_7 <- c(agg_did_treat_7$att.egt, 0, 0)
 ggplot(
     data = did_results,
     aes(x = from_treat)
-) + geom_line(aes(y = twfe_effect), color = "red") +
-    geom_line(aes(y = att_effect), color = "blue")
+) + geom_line(aes(y = twfe_effect, color = "red", )) +
+    geom_line(aes(y = att_effect, color = "blue")) +
+    scale_color_manual(
+        name="Method", labels = c("TWFE", "CS"), values = c("blue", "red")
+    )
 
 # Callaway-Sant'anna’s unbiasness and consistency graph
 
@@ -177,7 +203,15 @@ did_results$dgp_effect_later <- gamma * (did_results$from_treat +
 ggplot(
     data = did_results,
     aes(x = from_treat)
-) + geom_line(aes(y = dgp_effect_early), color = "green") +
-    geom_line(aes(y = dgp_effect_later), color = "brown") +
-    geom_line(aes(y = att_effect_5), color = "pink") +
-    geom_line(aes(y = att_effect_7), color = "orange")
+) + geom_line(aes(y = dgp_effect_early, color = "red")) +
+    geom_line(aes(y = dgp_effect_later, color = "blue")) +
+    geom_line(aes(y = att_effect_5, color = "green")) +
+    geom_line(aes(y = att_effect_7, color = "black")) +
+    scale_color_manual(name = "Legend", labels = c(
+        "DGP 5th month effect",
+        "DGP 7th month effect",
+        "Callaway-Sant'anna’s for 5th month",
+        "Callaway-Sant'anna’s for 7th month"
+    ), values = c(
+        "blue", "red", "green", "black"
+    ))
