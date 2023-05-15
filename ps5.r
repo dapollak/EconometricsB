@@ -203,15 +203,16 @@ did_results$dgp_effect_later <- gamma * (did_results$from_treat +
 ggplot(
     data = did_results,
     aes(x = from_treat)
-) + geom_line(aes(y = dgp_effect_early, color = "red")) +
+) +
+    geom_line(aes(y = dgp_effect_early, color = "red")) +
     geom_line(aes(y = dgp_effect_later, color = "blue")) +
     geom_line(aes(y = att_effect_5, color = "green")) +
-    geom_line(aes(y = att_effect_7, color = "black")) +
+    geom_line(aes(y = att_effect_7, color = "pink")) +
     scale_color_manual(name = "Legend", labels = c(
         "DGP 5th month effect",
         "DGP 7th month effect",
         "Callaway-Sant'anna’s for 5th month",
         "Callaway-Sant'anna’s for 7th month"
     ), values = c(
-        "blue", "red", "green", "black"
+        "red", "blue", "green", "pink"
     ))
