@@ -190,7 +190,7 @@ ggplot(
 ) + geom_line(aes(y = twfe_effect, color = "red", )) +
     geom_line(aes(y = att_effect, color = "blue")) +
     scale_color_manual(
-        name="Method", labels = c("TWFE", "CS"), values = c("blue", "red")
+        name="Method", labels = c("TWFE", "CS"), values = c("red", "blue")
     )
 
 # Callaway-Sant'anna’s unbiasness and consistency graph
