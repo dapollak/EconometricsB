@@ -29,8 +29,13 @@ balance_table <- nsw_dw %>%
                 group_by(variable) %>%
                 t_test(value ~ treat, detailed = T)
 
+print(balance_table[, c(
+    "variable", "estimate1", "estimate2", "estimate", "statistic", "p"
+)])
+
 balance_reg <- lm(education + age ~ treat, data = nsw_dw)
 
+# ATE
 print(mean(nsw_dw[nsw_dw$treat == 1, ]$re78) -
       mean(nsw_dw[nsw_dw$treat == 0, ]$re78))
 
@@ -52,6 +57,10 @@ balance_table2 <- nsw_psid_dw %>%
                 ) %>%
                 group_by(variable) %>%
                 t_test(value ~ treat, detailed = T)
+
+print(balance_table2[, c(
+    "variable", "estimate1", "estimate2", "estimate", "statistic", "p"
+)])
 
 # As calculated in Dehejia, Rajeev and S. Wahba (2002)
 print(mean(nsw_psid_dw[nsw_psid_dw$treat == 1, ]$re78) -
@@ -107,14 +116,18 @@ balance_table3 <- nsw_psid_dw %>%
                 group_by(variable) %>%
                 t_test(value ~ treat, detailed = T)
 
+print(balance_table3[, c(
+    "variable", "estimate1", "estimate2", "estimate", "statistic", "p"
+)])
+
 balance_reg3 <- lm(education + age ~ treat, data = nsw_psid_dw)
 
 print(mean(nsw_psid_dw[nsw_psid_dw$treat == 1, ]$re78) -
       mean(nsw_psid_dw[nsw_psid_dw$treat == 0, ]$re78))
 
 sec3_reg <- lm(re78 ~ treat + age + education + black + hispanic +
-                married + nodegree + re74 + re75 + u74, data = nsw_dw)
-summary(sec1_reg)
+                married + nodegree + re74 + re75 + u74, data = nsw_psid_dw)
+summary(sec3_reg)
 
 # 11 - NN Matching
 for (i in c(1, 5)) {
@@ -138,7 +151,7 @@ for (i in c(1, 5)) {
         weights = nn_match_data$weights
     )
 
-    print(summary(nn_match_reg)$coefficients["treat", 1])
+    print(summary(nn_match_reg)$coefficients["treat", ])
 }
 
 # 13
@@ -162,4 +175,7 @@ prop_match_reg <- lm(
     weights = prop_match_data$weights
 )
 
-print(summary(prop_match_reg)$coefficients["treat", 1])
+print(summary(prop_match_reg)$coefficients["treat", ])
+
+# 13 - plotting overlap
+plot(prop_match, type = "jitter", interactive = F)
