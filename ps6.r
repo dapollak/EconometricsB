@@ -39,9 +39,14 @@ balance_reg <- lm(education + age ~ treat, data = nsw_dw)
 print(mean(nsw_dw[nsw_dw$treat == 1, ]$re78) -
       mean(nsw_dw[nsw_dw$treat == 0, ]$re78))
 
-sec1_reg <- lm(re78 ~ treat + age + education + black + hispanic +
+# 3
+treat_experimental_reg1 <- lm(re78 ~ treat, data = nsw_dw)
+summary(treat_experimental_reg1)
+treat_spec_experimental1 <- lm(re78 ~ treat + black + education, data = nsw_dw)
+summary(treat_spec_experimental1)
+fully_experimental1 <- lm(re78 ~ treat + age + education + black + hispanic +
                 married + nodegree + re74 + re75 + u74, data = nsw_dw)
-summary(sec1_reg)
+summary(fully_experimental1)
 ### Section 2
 
 nsw_psid_dw <- read_dta("data/nsw_psid_dw.dta")
@@ -66,9 +71,13 @@ print(balance_table2[, c(
 print(mean(nsw_psid_dw[nsw_psid_dw$treat == 1, ]$re78) -
       mean(nsw_psid_dw[nsw_psid_dw$treat == 0, ]$re78))
 
-sec2_reg <- lm(re78 ~ treat + age + education + black + hispanic +
+treat_experimental_reg2 <- lm(re78 ~ treat, data = nsw_psid_dw)
+summary(treat_experimental_reg2)
+treat_spec_experimental2 <- lm(re78 ~ treat + black + education, data = nsw_psid_dw)
+summary(treat_spec_experimental2)
+fully_experimental2 <- lm(re78 ~ treat + age + education + black + hispanic +
                 married + nodegree + re74 + re75 + u74, data = nsw_psid_dw)
-summary(sec2_reg)
+summary(fully_experimental2)
 
 ### Section 3
 
@@ -125,9 +134,13 @@ balance_reg3 <- lm(education + age ~ treat, data = nsw_psid_dw)
 print(mean(nsw_psid_dw[nsw_psid_dw$treat == 1, ]$re78) -
       mean(nsw_psid_dw[nsw_psid_dw$treat == 0, ]$re78))
 
-sec3_reg <- lm(re78 ~ treat + age + education + black + hispanic +
+treat_experimental_reg3 <- lm(re78 ~ treat, data = nsw_psid_dw)
+summary(treat_experimental_reg3)
+treat_spec_experimental3 <- lm(re78 ~ treat + black + education, data = nsw_psid_dw)
+summary(treat_spec_experimental3)
+fully_experimental3 <- lm(re78 ~ treat + age + education + black + hispanic +
                 married + nodegree + re74 + re75 + u74, data = nsw_psid_dw)
-summary(sec3_reg)
+summary(fully_experimental3)
 
 # 11 - NN Matching
 for (i in c(1, 5)) {
@@ -146,7 +159,10 @@ for (i in c(1, 5)) {
 
     nn_match_data <- match.data(nn_match)
     nn_match_reg <- lm(
-        re78 ~ treat,
+        re78 ~ treat + age + age_sq + education + education_sq +
+        black + hispanic + married + nodegree +
+        re74 + re74_sq + re75 + re75_sq + u74 +
+        black:u74,
         data = nn_match_data,
         weights = nn_match_data$weights
     )
@@ -170,7 +186,10 @@ prop_match <- matchit(treat ~ age + age_sq + education + education_sq +
                             ratio = 5)
 prop_match_data <- match.data(prop_match)
 prop_match_reg <- lm(
-    re78 ~ treat,
+    re78 ~ treat + age + age_sq + education + education_sq +
+    black + hispanic + married + nodegree +
+    re74 + re74_sq + re75 + re75_sq + u74 +
+    black:u74,
     data = prop_match_data,
     weights = prop_match_data$weights
 )
