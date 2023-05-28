@@ -19,7 +19,7 @@ nsw_dw <- read_dta("data/nsw_dw.dta")
 balance_table <- nsw_dw %>%
                 select(
                     treat, age, education, black, hispanic,
-                    married, nodegree, re74, re75, u74
+                    married, nodegree, re74, re75, u74, re78
                 ) %>%
                 pivot_longer(
                     -treat,
@@ -53,7 +53,7 @@ nsw_psid_dw <- read_dta("data/nsw_psid_dw.dta")
 balance_table2 <- nsw_psid_dw %>%
                 select(
                     treat, age, education, black, hispanic,
-                    married, nodegree, re74, re75, u74
+                    married, nodegree, re74, re75, u74, re78
                 ) %>%
                 pivot_longer(
                     -treat,
@@ -198,3 +198,104 @@ print(summary(prop_match_reg)$coefficients["treat", ])
 
 # 13 - plotting overlap
 plot(prop_match, type = "jitter", interactive = F)
+
+# 17
+
+# a
+prop_match_cia <- matchit(treat ~ age + age_sq + education + education_sq +
+                            black + hispanic + married + nodegree,
+                            data = nsw_psid_dw,
+                            method = "nearest",
+                            distance = "glm",
+                            link = "logit",
+                            estimand = "ATT",
+                            replace = T,
+                            caliper = NULL,
+                            exact = NULL,
+                            ratio = 5)
+prop_match_cia_data <- match.data(prop_match_cia)
+prop_match_cia_reg <- lm(
+    re78 ~ treat + age + age_sq + education + education_sq +
+    black + hispanic + married + nodegree +
+    re74 + re74_sq + re75 + re75_sq + u74 +
+    black:u74,
+    data = prop_match_cia_data,
+    weights = prop_match_cia_data$weights
+)
+
+print(summary(prop_match_cia_reg)$coefficients["treat", ])
+
+# b
+prop_match_cia2 <- matchit(treat ~ age + age_sq + education + education_sq +
+                            black + hispanic + married + nodegree,
+                            data = nsw_psid_dw,
+                            method = "nearest",
+                            distance = "glm",
+                            link = "logit",
+                            estimand = "ATT",
+                            replace = T,
+                            caliper = NULL,
+                            exact = NULL,
+                            ratio = 5)
+prop_match_cia2_data <- match.data(prop_match_cia2)
+prop_match_cia2_reg <- lm(
+    re75 ~ treat + age + age_sq + education + education_sq +
+    black + hispanic + married + nodegree +
+    re74 + re74_sq + u74 +
+    black:u74,
+    data = prop_match_cia2_data,
+    weights = prop_match_cia2_data$weights
+)
+
+print(summary(prop_match_cia2_reg)$coefficients["treat", ])
+
+# c
+prop_match_cia3 <- matchit(treat ~ age + age_sq + education + education_sq +
+                            black + hispanic + married + nodegree +
+                            re74 + re74_sq + u74 +
+                            black:u74,
+                            data = nsw_psid_dw,
+                            method = "nearest",
+                            distance = "glm",
+                            link = "logit",
+                            estimand = "ATT",
+                            replace = T,
+                            caliper = NULL,
+                            exact = NULL,
+                            ratio = 5)
+prop_match_cia3_data <- match.data(prop_match_cia3)
+prop_match_cia3_reg <- lm(
+    re78 ~ treat + age + age_sq + education + education_sq +
+    black + hispanic + married + nodegree +
+    re74 + re74_sq + u74 +
+    black:u74,
+    data = prop_match_cia3_data,
+    weights = prop_match_cia3_data$weights
+)
+
+print(summary(prop_match_cia3_reg)$coefficients["treat", ])
+
+prop_match_cia4 <- matchit(treat ~ age + age_sq + education + education_sq +
+                            black + hispanic + married + nodegree +
+                            re74 + re74_sq + u74 +
+                            black:u74,
+                            data = nsw_psid_dw,
+                            method = "nearest",
+                            distance = "glm",
+                            link = "logit",
+                            estimand = "ATT",
+                            replace = T,
+                            caliper = NULL,
+                            exact = NULL,
+                            ratio = 5)
+prop_match_cia4_data <- match.data(prop_match_cia4)
+prop_match_cia4_reg <- lm(
+    re75 ~ treat + age + age_sq + education + education_sq +
+    black + hispanic + married + nodegree +
+    re74 + re74_sq + u74 +
+    black:u74,
+    data = prop_match_cia4_data,
+    weights = prop_match_cia4_data$weights
+)
+
+print(summary(prop_match_cia4_reg)$coefficients["treat", ])
