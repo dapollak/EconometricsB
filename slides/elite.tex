@@ -14,8 +14,7 @@
   Tel-Aviv University
 }
 
-\date % (optional)
-{Eco B, Jun 2023}
+\date{Eco B, Jun 2023}
 
 \begin{document}
 
@@ -23,11 +22,24 @@
 
 \begin{frame}
 \frametitle{Reiteration}
+$$Y_i=\beta_0+\beta_1SAT_j+\beta_2X_{1i}+\beta_3X_{2i}+\epsilon_i$$
 \begin{itemize}
-\item<1-> Text visible on slide 1
-\item<1-> Text visible on slide 2
-\item<1-> Text visible on slide 3
-\item<1-> Text visible on slide 4
+\item $X_{1i}$ - observed, $X_{2i}$ - unobserved and incorporated in the error term
+    \begin{itemize}
+    \item Sub-category
+    \end{itemize}
+\item Problem arises if $X_{2i}$ is correlated with $X_{1i}$ and is predictive for $Y_i$.
+\item Because students can anticipate these admission decisions when they decide where to submit their applications, information about their ability (and perceived chances
+of admission) as well as (unconstrained) preferences will be incorporated into their application choices
+\item Matched students of \textbf{the same gender} who applied to, were accepted to, and were rejected from similar colleges
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Reiteration}
+$$Y_i=\beta_0+\beta_1SAT_j+\beta_2X_{1i}+\beta_3X_{2i}+\epsilon_i$$
+\begin{itemize}
+\item Identification assumption: Conditional on application acceptance, enrollment is uncorrelated with the unobservables that are correlated with outcome of interest (it’s like $Y_i(0)$), it’s like an omitted variable
 \end{itemize}
 \end{frame}
 
