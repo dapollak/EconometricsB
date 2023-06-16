@@ -1,6 +1,7 @@
 library(lfe)
 library(dplyr)
 library(stargazer)
+library(haven)
 
 rm(list = ls())
 options(scipen = 999)
@@ -86,3 +87,16 @@ reg5 <- felm(income_hetero ~ 1 | 0 | (attend_college ~ near_col),
 stargazer(reg5, type = "text")
 
 #### Question 2 ####
+gelbach_data <- read_dta("data/gelbach.dta")
+gelbach_data$bornearly <- ifelse(gelbach_data$quarter == 1, 1, 0)
+gelbach_data <- gelbach_data[gelbach_data$quarter < 2, ]
+# (c)
+wald_estimator <- (mean(gelbach_data$hours[gelbach_data$bornearly == 1]) -
+        mean(gelbach_data$hours[gelbach_data$bornearly == 0])) /
+        (mean(gelbach_data$public[gelbach_data$bornearly == 1]) -
+        mean(gelbach_data$public[gelbach_data$bornearly == 0]))
+print(wald_estimator)
+
+reg6 <- felm(hours ~ 1 | 0 | (public ~ bornearly),
+                            data = gelbach_data)
+stargazer(reg6, type = "text")
