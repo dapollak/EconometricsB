@@ -1,9 +1,11 @@
 library(lfe)
 library(dplyr)
+library(stargazer)
 
 rm(list = ls())
 options(scipen = 999)
 
+#### Question 1 ####
 
 N <- 1000000
 mydata <- data.frame(matrix(, nrow = N, ncol = 0))
@@ -49,6 +51,8 @@ reg2 <- lm(income ~ attend_college, data = mydata)
 print(summary(reg2))
 
 # (f)
+reg3_first_stage <- lm(attend_college ~ near_col, data = mydata)
+print(summary(reg3_first_stage))
 reg3 <- felm(income ~ 1 | 0 | (attend_college ~ near_col),
                         data = mydata)
 print(summary(reg3))
@@ -63,7 +67,7 @@ print(summary(reg3))
 reg4 <- felm(income ~ 1 | 0 | (attend_college ~ near_col),
                             data = mydata[mydata$ability > 0, ])
 print(summary(reg4))
-
+print(stargazer(reg4, reg3, type = "text"))
 # (j)
 mydata$income_hetero <- 0
 mydata <- mydata %>%
@@ -79,4 +83,6 @@ mydata <- mydata %>%
 # (k)
 reg5 <- felm(income_hetero ~ 1 | 0 | (attend_college ~ near_col),
                             data = mydata[mydata$ability > 0, ])
-print(summary(reg5))
+stargazer(reg5, type = "text")
+
+#### Question 2 ####
