@@ -1,0 +1,81 @@
+\documentclass{beamer}
+\usetheme{Boadilla}
+%Information to be included in the title page:
+\title[Eco B] %optional
+{Saving Lives at Birth: The Impact of Home Births on Infant Outcomes}
+
+\subtitle{Discussion}
+
+\author % (optional, for multiple authors)
+{Daniel Pollak}
+
+\institute[TAU] % (optional)
+{
+  Tel-Aviv University
+}
+
+\date{Jun 2023}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Overview}
+\begin{itemize}
+  \item \textbf{Main question:} What is the effeect of home births on the health outcomes of low-risk newborns?
+  \item \textbf{Data:} Perinatal Registry of the Netherlands for 2000-2008
+  \begin{itemize}
+    \item ~25\% of births took place at home during this period
+  \end{itemize}
+  \item IV Results -
+\end{itemize}
+
+\begin{table}[!htbp] \centering 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}}lccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{3}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-4} 
+\\[-1.8ex] & 7-day mortality & 28-day mortality & Apgar Score \\ 
+\hline \\[-1.8ex] 
+ Hospital & -8.287$^{***}$ & -9.219$^{***}$ & -0.018 \\ 
+  & (3.157) & (3.353) & (0.088) \\
+\end{tabular} 
+\end{table}
+\end{frame}
+
+\begin{frame}
+\frametitle{Empirical Strategy Reiteration}
+$$Y_{izt}=\beta_0+\beta_1Hospital_{izt}+\beta_2X_{izt}+\epsilon_{izt}$$
+\begin{itemize}
+  \item $i$ - infant, $z$ - mother location, $t$ - year
+  \item $Y_{izt}$ captures the infant's health, $Hospital_{izt}$ is a dummy for hospital birth, $X_{izt}$ is a set of controls
+  \item \textbf{Endogeneity:} Having a higher risk for unhealthy infant is unobservable, and clearly affects the decision where to give birth
+  \item \textbf{IV:} - the distance between a mother's residence and the nearest hospital
+  \item Identifies LATE - the causal effect for mothers that gives birth at home only if they live far from hospital
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Assumptions}
+  \begin{itemize}
+    \item \textbf{Relevance:} The distance from hospital should be a strong determinant of giving birth location
+    \begin{itemize}
+      \item Easily testable using F-test on the first stage equation
+    \end{itemize}
+    \item \textbf{Exclusion:} Distance from hospital should affect the outcome through the delivery location decision only
+    \item \textbf{Monotonicity:} Living near hospital will not affect, or will cause to deliver at hospital
+  \end{itemize}
+  \end{frame}
+
+\begin{frame}
+\frametitle{Discussion}
+\begin{itemize}
+\item Exclusion assumption violation - the distance IV may affect directly the health if sudden things that require hospital happen during the delivery
+\item Monotonicity assumption violation - Living near hospital makes it more confident to deliver at home, cause a needed evacuation will be easier
+\end{itemize}
+\end{frame}
+
+\end{document}
