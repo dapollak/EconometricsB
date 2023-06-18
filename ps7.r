@@ -209,6 +209,11 @@ for (outcome in outcome_vars) {
         ols1$coefficients["public"],
         ols2$coefficients[1],
         iv$coefficients[11]
+    )) %>%
+    rbind(c(
+        sprintf("(%s)", summary(ols1)$coefficients[2, 2]),
+        sprintf("(%s)", summary(ols2)$coefficients[1, 2]),
+        sprintf("(%s)", summary(iv)$coefficients[11, 2])
     ))
 }
 
