@@ -112,6 +112,55 @@ print(nrow(gelbach_data[gelbach_data$public == 0, ]))
 print(nrow(gelbach_data[gelbach_data$bornearly == 0, ]))
 
 # (f)
+characteristics <- c(
+    "age", "age2", "grade", "centcity",
+    "white", "num05", "num612", "num1317", "othrlt18", "othrge18", "hours"
+)
+results_f <- data.frame(matrix(nrow = 0, ncol = 5))
+gelbach_data$public_inv <- 1 - gelbach_data$public
+
+for (char in characteristics) {
+    # char <- "age"
+    gelbach_data[, sprintf("%s_taltal", char)] <-
+                gelbach_data[, char] * gelbach_data$public
+
+    gelbach_data[, sprintf("%s_taltal_inv", char)] <-
+                gelbach_data[, char] * gelbach_data$public_inv
+
+    iv_formula_treated <- formula(sprintf("%s_taltal ~ 1 | 0 | (public ~ quarter)", char))
+    iv_formula_untreated <- formula(sprintf("%s_taltal_inv ~ 1 | 0 | (public_inv ~ quarter)", char))
+    iv_treated <- felm(iv_formula_treated, data = gelbach_data)
+    iv_untreated <- felm(iv_formula_untreated, data = gelbach_data)
+    # iv_pooled <- felm(iv_formula, data = gelbach_data)
+
+    always_takers <- mean(as.matrix(gelbach_data[(gelbach_data$public == 1 & gelbach_data$bornearly == 0), ][char]))
+    never_takers <- mean(as.matrix(gelbach_data[(gelbach_data$public == 0 & gelbach_data$bornearly == 1), ][char]))
+
+    results_f <- results_f %>% rbind(c(
+        iv_treated$coefficients[2],
+        iv_untreated$coefficients[2],
+        "-",
+        never_takers,
+        always_takers
+    ))
+}
+
+colnames(results_f) <- c(
+    "Compliers Untreated", "Compliers Treated",
+    "Compliers Pooled", "Never-Takers", "Always-Takers"
+)
+rownames(results_f) <- characteristics
+results_f
+
+# (g)
+gelbach_data$hours_taltal2 <-
+                gelbach_data$hours * (1 - gelbach_data$public)
+gelbach_data$public_inv <- 1 - gelbach_data$public
+compliers_no_treat_reg <- felm(
+    hours_taltal2 ~ 1 | 0 | (public_inv ~ quarter),
+    data = gelbach_data
+)
+print(compliers_no_treat_reg)
 
 # (i)
 gelbach_data_youngest_is_5 <- gelbach_data[gelbach_data$youngest == 5, ]
@@ -137,10 +186,10 @@ balance_table_i <- gelbach_data_youngest_is_5 %>% select(
                         "Full Sample", "74:II", "74:III", "74:IV", "75:I"
                     ))
 balance_table_i <- t(balance_table_i)
-
+balance_table_i
 # (j)
 outcome_vars <- c("work79", "hours79", "weeksw79", "salary", "hours", "lfp")
-results <- data.frame(matrix(nrow = 0, ncol = 3))
+results_i <- data.frame(matrix(nrow = 0, ncol = 3))
 
 for (outcome in outcome_vars) {
     # outcome <- "work79"
@@ -156,12 +205,12 @@ for (outcome in outcome_vars) {
     )
     iv <- felm(iv_formula, data = gelbach_data_youngest_is_5)
 
-    results <- results %>% rbind(c(
+    results_i <- results_i %>% rbind(c(
         ols1$coefficients["public"],
         ols2$coefficients[1],
         iv$coefficients[11]
     ))
 }
 
-colnames(results) <- c("OLS1", "OLS2", "IV")
-results
+colnames(results_i) <- c("OLS1", "OLS2", "IV")
+results_i
