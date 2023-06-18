@@ -89,7 +89,7 @@ stargazer(reg5, type = "text")
 #### Question 2 ####
 gelbach_data <- read_dta("data/gelbach.dta")
 gelbach_data$bornearly <- ifelse(gelbach_data$quarter == 1, 1, 0)
-gelbach_data <- gelbach_data[gelbach_data$quarter < 2, ]
+
 # (c)
 wald_estimator <- (mean(gelbach_data$hours[gelbach_data$bornearly == 1]) -
         mean(gelbach_data$hours[gelbach_data$bornearly == 0])) /
@@ -97,6 +97,71 @@ wald_estimator <- (mean(gelbach_data$hours[gelbach_data$bornearly == 1]) -
         mean(gelbach_data$public[gelbach_data$bornearly == 0]))
 print(wald_estimator)
 
+reg6_first_stage <- lm(
+    public ~ bornearly,
+    data = gelbach_data[gelbach_data$quarter < 2, ]
+)
 reg6 <- felm(hours ~ 1 | 0 | (public ~ bornearly),
-                            data = gelbach_data)
-stargazer(reg6, type = "text")
+                            data = gelbach_data[[gelbach_data$quarter < 2, ]])
+stargazer(reg6, reg6_first_stage, type = "text")
+
+# (e)
+print(nrow(gelbach_data[gelbach_data$public == 1, ]))
+print(nrow(gelbach_data[gelbach_data$bornearly == 1, ]))
+print(nrow(gelbach_data[gelbach_data$public == 0, ]))
+print(nrow(gelbach_data[gelbach_data$bornearly == 0, ]))
+
+# (f)
+
+# (i)
+gelbach_data_youngest_is_5 <- gelbach_data[gelbach_data$youngest == 5, ]
+gelbach_data_youngest_is_5$quarter <- ifelse(
+    gelbach_data_youngest_is_5$quarter == 0,
+    4,
+    gelbach_data_youngest_is_5$quarter
+)
+balance_table_i <- gelbach_data_youngest_is_5 %>% select(
+                    quarter, age, age2, grade, centcity, white,
+                    num05, num612, num1317, othrlt18, othrge18
+                    ) %>%
+                    summarise(across(everything(), mean)) %>%
+                    rbind(
+                        gelbach_data_youngest_is_5 %>% select(
+                            quarter, age, age2, grade, centcity, white,
+                            num05, num612, num1317, othrlt18, othrge18
+                        ) %>%
+                        group_by(quarter) %>%
+                        summarise(across(everything(), mean))
+                    ) %>%
+                    mutate(quarter = c(
+                        "Full Sample", "74:II", "74:III", "74:IV", "75:I"
+                    ))
+balance_table_i <- t(balance_table_i)
+
+# (j)
+outcome_vars <- c("work79", "hours79", "weeksw79", "salary", "hours", "lfp")
+results <- data.frame(matrix(nrow = 0, ncol = 3))
+
+for (outcome in outcome_vars) {
+    # outcome <- "work79"
+    ols1_formula <- formula(sprintf("%s ~ public", outcome))
+    ols1 <- lm(ols1_formula, data = gelbach_data_youngest_is_5)
+
+    ols2_formula <- formula(sprintf("%s ~ public + age + age2 + grade + centcity + white + num05 + num612 + num1317 + othrlt18 + othrge18 | state", outcome))
+    ols2 <- felm(ols2_formula, data = gelbach_data_youngest_is_5)
+
+    iv_formula <- formula(
+        sprintf("%s ~ age + age2 + grade + centcity + white + num05 + num612 + num1317 + othrlt18 + othrge18 | state | (public ~ quarter)",
+        outcome)
+    )
+    iv <- felm(iv_formula, data = gelbach_data_youngest_is_5)
+
+    results <- results %>% rbind(c(
+        ols1$coefficients["public"],
+        ols2$coefficients[1],
+        iv$coefficients[11]
+    ))
+}
+
+colnames(results) <- c("OLS1", "OLS2", "IV")
+results

@@ -53,13 +53,14 @@ $$Y_{izt}=\beta_0+\beta_1Hospital_{izt}+\beta_2X_{izt}+\epsilon_{izt}$$
   \item $i$ - infant, $z$ - mother location, $t$ - year
   \item $Y_{izt}$ captures the infant's health, $Hospital_{izt}$ is a dummy for hospital birth, $X_{izt}$ is a set of controls
   \item \textbf{Endogeneity:} Having a higher risk for unhealthy infant is unobservable, and clearly affects the decision where to give birth
-  \item \textbf{IV:} - the distance between a mother's residence and the nearest hospital
+  \item \textbf{IV:} the distance between a mother's residence and the nearest hospital
   \item Identifies LATE - the causal effect for mothers that gives birth at home only if they live far from hospital
 \end{itemize}
 \end{frame}
 
 \begin{frame}
   \frametitle{Assumptions}
+  Three assumptions are required in order to get a consistent estimates:
   \begin{itemize}
     \item \textbf{Relevance:} The distance from hospital should be a strong determinant of giving birth location
     \begin{itemize}
