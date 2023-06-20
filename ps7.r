@@ -118,6 +118,18 @@ characteristics <- c(
 )
 results_f <- data.frame(matrix(nrow = 0, ncol = 5))
 gelbach_data$public_inv <- 1 - gelbach_data$public
+gelbach_data_pooled <- gelbach_data
+
+gelbach_data_pooled <- gelbach_data_pooled %>%
+        cbind(sample1 = 1, sample2 = 0) %>%
+        rbind(gelbach_data_pooled %>% cbind(sample1 = 0, sample2 = 1)) %>%
+        mutate(
+            z_sample1 = quarter * sample1,
+            z_sample2 = quarter * sample2
+        ) %>%
+        mutate(
+            public_pooled = public * sample1 + (1 - public) * sample2
+        )
 
 for (char in characteristics) {
     # char <- "age"
@@ -127,11 +139,18 @@ for (char in characteristics) {
     gelbach_data[, sprintf("%s_taltal_inv", char)] <-
                 gelbach_data[, char] * gelbach_data$public_inv
 
+    gelbach_data_pooled[, sprintf("%s_pooled", char)] <-
+        gelbach_data_pooled[, char] * gelbach_data_pooled$public * gelbach_data_pooled$sample1 +
+        gelbach_data_pooled[, char] * (1 - gelbach_data_pooled$public) * gelbach_data_pooled$sample2
+
+
     iv_formula_treated <- formula(sprintf("%s_taltal ~ 1 | 0 | (public ~ quarter)", char))
     iv_formula_untreated <- formula(sprintf("%s_taltal_inv ~ 1 | 0 | (public_inv ~ quarter)", char))
     iv_treated <- felm(iv_formula_treated, data = gelbach_data)
     iv_untreated <- felm(iv_formula_untreated, data = gelbach_data)
-    # iv_pooled <- felm(iv_formula, data = gelbach_data)
+    
+    iv_pooled_formula <- formula(sprintf("%s_pooled ~ sample2 | 0 | (public_pooled ~ z_sample1 + z_sample2)", char))
+    iv_pooled <- felm(iv_pooled_formula, data = gelbach_data_pooled)
 
     always_takers <- mean(as.matrix(gelbach_data[(gelbach_data$public == 1 & gelbach_data$bornearly == 0), ][char]))
     never_takers <- mean(as.matrix(gelbach_data[(gelbach_data$public == 0 & gelbach_data$bornearly == 1), ][char]))
@@ -139,7 +158,7 @@ for (char in characteristics) {
     results_f <- results_f %>% rbind(c(
         iv_treated$coefficients[2],
         iv_untreated$coefficients[2],
-        "-",
+        iv_pooled$coefficients[3],
         never_takers,
         always_takers
     ))
