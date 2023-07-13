@@ -1,4 +1,11 @@
 \documentclass[12pt, letterpaper]{article}
+\usepackage[paper=a4paper,margin=1in]{geometry}
+\usepackage{pgfplots}
+\pgfplotsset{width=10cm,compat=1.9}
+% We will externalize the figures
+\usepgfplotslibrary{external}
+\tikzexternalize
+
 \title{Replication work - Modern Medicine and the Twentieth Century Decline in
 Mortality: Evidence on the Impact of Sulfa Drugs \\
 \large By Seema Jayachandran, Adriana Lleras-Muney, and Kimberly V. Smith}
@@ -10,5 +17,10 @@ Mortality: Evidence on the Impact of Sulfa Drugs \\
 \date{September 2023}
 \begin{document}
 \maketitle
-Text
+Texttt
+\begin{tikzpicture}
+  \begin{axis}
+  \addplot[color=red]{exp(x)};
+  \end{axis}
+  \end{tikzpicture}
 \end{document}

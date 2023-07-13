@@ -86,5 +86,13 @@ for (bw in estimates_bw_df$bandwidth) {
     estimates_bw_df[estimates_bw_df$bandwidth == bw,]$ci_upper <- reg_bw$ci[4]
 }
 
+for (bw in estimates_bw_df$bandwidth) {
+    bw_data <- subset(data, (dbirwt > (1500 - bw/2)) & (dbirwt <= (1500 + bw/2)))
+    reg_bw <- felm(death1year ~ VLBW + VLBW:I(dbirwt - 1500) + I(1-VLBW):I(dbirwt - 1500) + gestat | 0 | 0 | dbirwt, bw_data)
+    estimates_bw_df[estimates_bw_df$bandwidth == bw,]$estimates <- reg_bw$coefficients[2]
+    estimates_bw_df[estimates_bw_df$bandwidth == bw,]$ci_lower <- confint(reg_bw, "VLBW")[1]
+    estimates_bw_df[estimates_bw_df$bandwidth == bw,]$ci_upper <- confint(reg_bw, "VLBW")[2]
+}
+
 ggplot(estimates_bw_df, aes(x = bandwidth, y = estimates)) + geom_point() +
 geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper), colour="blue", width=.1)
