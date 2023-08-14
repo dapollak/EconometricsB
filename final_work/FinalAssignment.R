@@ -244,7 +244,7 @@ latex_code <- texreg(table4_panel_a)
 writeLines(latex_code, "table4_panel_a.tex")
 
 ##Panel B- State-level, all years, 1925–1943
-state_data <- read_dta("data/datasets/state_data.dta")
+state_data <- read_dta("final_work/data/datasets/20080229_state_data.dta")
 # Filter the data to keep only the years between 1925 and 1943
 state_data_1925_1943 <- state_data %>%
   filter(year >= 1925 & year <= 1943)

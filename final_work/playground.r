@@ -1,6 +1,8 @@
 library(haven)
 library(dplyr)
 library(tidyr)
+library(lfe)
+library(car)
 
 rm(list = ls())
 options(scipen = 999)
@@ -45,20 +47,66 @@ for (i in seq(-5, 6)) {
     }
     subset_state_data_1925_1943_long[col_name] <-
                             ifelse(subset_state_data_1925_1943_long$year_c - i == 0 & 
-                                    subset_state_data_1925_1943_long$treated, 1, 0)
+                                    (0 | subset_state_data_1925_1943_long$treated), 1, 0)
 }
 
-ev_study1 <- lm(lnm_rate ~ treated + beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1, 
-               data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "tb_rate")))
-summary(ev_study1)
+ev_study1_f <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
+                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1 | factor(state):year + disease, 
+               data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "infl_pneumonia_rate", "tb_rate")))
+summary(ev_study1_f)
 
-ev_study2 <- lm(lnm_rate ~ treated + beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1,
+linearHypothesis(ev_study1_f, c(
+  "beta_min_5=0",
+  "beta_min_4=0",
+  "beta_min_3=0",
+  "beta_min_2=0",
+  "beta_min_1=0"
+), white.adjust = "hc1")
+
+ev_study2_f <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
+                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1 | factor(state):year + disease,
                data = filter(subset_state_data_1925_1943_long, disease %in% c("infl_pneumonia_rate", "tb_rate")))
-summary(ev_study2)
+summary(ev_study2_f)
 
-ev_study3 <- lm(lnm_rate ~ treated + beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1,
-               data = filter(subset_state_data_1925_1943_long, disease %in% c("scarfever_rate", "tb_rate")))
-summary(ev_study3)
+linearHypothesis(ev_study2_f, c(
+  "beta_min_5=0",
+  "beta_min_4=0",
+  "beta_min_3=0",
+  "beta_min_2=0",
+  "beta_min_1=0"
+), white.adjust = "hc1")
+
+# State data fixed effects
+state_fe <- felm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37 |state_post37| 0 | disease_year,
+             data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "tb_rate")))
+
+fixed_effects <- getfe(state_fe)
+fixed_effects$diff <- lead(c$effect, 48, 1) - c$effect
+fixed_effects <- fixed_effects[1:48,]
+fixed_effects$state <- (subset_state_data_1925_1943_long %>%
+                        select(state) %>%
+                        distinct())$state
+fixed_effects <- fixed_effects[c("state", "diff")]
+
+# state data seperate regression
+e_all <- c()
+e_significant <- c()
+for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct())$state) {
+  reg <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37, 
+               data = filter(subset_state_data_1925_1943_long, state == state_s & disease %in% c("mmr", "tb_rate")))
+  
+  lh <- linearHypothesis(reg, c(
+    "treatedTRUE:post37TRUE=0"
+  ), white.adjust = "hc1")
+
+  e_all <- c(e_all, reg$coefficients["treatedTRUE:post37TRUE"])
+  if (lh$"Pr(>F)"[2] < 0.05) {
+    e_significant <- c(e_significant, reg$coefficients["treatedTRUE:post37TRUE"])
+  } else {
+    e_significant <- c(e_significant, 0)
+  }
+}
+fixed_effects$seperate_effects_all <- e_all
+fixed_effects$seperate_effects_significant <- e_significant
+
+write.csv(fixed_effects, "/tmp/hm.csv")
