@@ -134,32 +134,27 @@ national_data$scarlet_break_output <- log(national_data$scarlet_fever_tot) -
                               lag(log(national_data$scarlet_fever_tot))
 
 print("all,mmr,inf_pne,scarlet,tuberculosis")
+t_results <- data.frame()
 for (tau in 1933:1942) {
   all_break_reg <- lm(all_break_output ~ I(year >= tau), data = national_data)
-  all_t_val <- summary(all_break_reg)$coefficients[,3][2]
+  # all_t_val <- summary(all_break_reg)$coefficients[,3][2]
+  all_t_val <- coeftest(all_break_reg, vcov.=NeweyWest(all_break_reg, lag=0, adjust=F))[6]
   
   mmr_break_reg <- lm(mmr_break_output ~ I(year >= tau), data = national_data)
-  mmr_t_val <- summary(mmr_break_reg)$coefficients[,3][2]
+  mmr_t_val <- coeftest(mmr_break_reg, vcov.=NeweyWest(mmr_break_reg, lag=0, adjust=F))[6]
 
   inf_pne_break_reg <- lm(inf_pne_break_output ~ I(year >= tau), data = national_data)
-  inf_pne_t_val <- summary(inf_pne_break_reg)$coefficients[,3][2]
+  inf_pne_t_val <- coeftest(inf_pne_break_reg, vcov.=NeweyWest(inf_pne_break_reg, lag=0, adjust=F))[6]
 
   scarlet_break_reg <- lm(scarlet_break_output ~ I(year >= tau), data = national_data)
-  scarlet_t_val <- summary(scarlet_break_reg)$coefficients[,3][2]
+  scarlet_t_val <- coeftest(scarlet_break_reg, vcov.=NeweyWest(scarlet_break_reg, lag=0, adjust=F))[6]
 
   tub_break_reg <- lm(tuberculosis_break_output ~ I(year >= tau), data = national_data)
-  tub_t_val <- summary(tub_break_reg)$coefficients[,3][2]
+  tub_t_val <- coeftest(tub_break_reg, vcov.=NeweyWest(tub_break_reg, lag=0, adjust=F))[6]
 
-  print(sprintf("%s,%s,%s,%s,%s,%s", tau, all_t_val, mmr_t_val, inf_pne_t_val, scarlet_t_val, tub_t_val))
+  print(sprintf("%s,%s,%s,%s,%s,%s", tau, all_t_val^2, mmr_t_val^2, inf_pne_t_val^2, scarlet_t_val^2, tub_t_val^2))
+  t_results <- rbind(t_results, data.frame(
+    year=tau, all_t_val=all_t_val^2, mmr_t_val=mmr_t_val^2, inf_pne_t_val=inf_pne_t_val^2,
+    scarlet_t_val=scarlet_t_val^2, tub_t_val=tub_t_val^2
+  ))
 }
-
-for (tau in 14:23) {
-  fstat <- sctest(
-    national_data$mmr_break_output ~ 1,
-    type = "Chow",
-    point = tau
-  )[1]
-  print(sprintf("%s - %s", tau, fstat))
-}
-
-coeftest(all_break_reg, vcov.=NeweyWest(all_break_reg, lag=0, adjust=TRUE, verbose=TRUE))
