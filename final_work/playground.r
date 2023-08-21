@@ -3,6 +3,10 @@ library(dplyr)
 library(tidyr)
 library(lfe)
 library(car)
+library(stargazer)
+library(strucchange)
+library(coeftest)
+library(lmtest)
 
 rm(list = ls())
 options(scipen = 999)
@@ -38,7 +42,7 @@ subset_state_data_1925_1943_long$state_post37 <- as.numeric(interaction(subset_s
 subset_state_data_1925_1943_long$disease_year <- as.numeric(interaction(subset_state_data_1925_1943_long$disease, subset_state_data_1925_1943_long$year))  
 
 # add lags and leads
-for (i in seq(-5, 6)) {
+for (i in seq(-11, 6)) {
     if (i < 0) {
         col_name <- sprintf("beta_min_%s", abs(i))
     }
@@ -46,21 +50,26 @@ for (i in seq(-5, 6)) {
         col_name <- sprintf("beta_%s", i)
     }
     subset_state_data_1925_1943_long[col_name] <-
-                            ifelse(subset_state_data_1925_1943_long$year_c - i == 0 & 
-                                    (0 | subset_state_data_1925_1943_long$treated), 1, 0)
+                      ifelse(subset_state_data_1925_1943_long$year_c - i == 0 &
+                      (0 | subset_state_data_1925_1943_long$treated), 1, 0)
 }
 
 ev_study1_f <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_6 + beta_5 + beta_4 + beta_3 + beta_2 + beta_1 | factor(state):year + disease, 
-               data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "infl_pneumonia_rate", "tb_rate")))
+          beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(state):year + disease | 0 | state:year, 
+          data = filter(subset_state_data_1925_1943_long, disease %in% c(
+            "mmr",
+            "infl_pneumonia_rate",
+            "tb_rate"
+          )))
 summary(ev_study1_f)
+stargazer(coef(summary(ev_study1_f))[, 1:2], flip = TRUE)
 
 linearHypothesis(ev_study1_f, c(
   "beta_min_5=0",
   "beta_min_4=0",
-  "beta_min_3=0",
-  "beta_min_2=0",
-  "beta_min_1=0"
+  "beta_min_3=0"
+  # "beta_min_2=0",
+  # "beta_min_1=0"
 ), white.adjust = "hc1")
 
 ev_study2_f <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
@@ -109,4 +118,48 @@ for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct
 fixed_effects$seperate_effects_all <- e_all
 fixed_effects$seperate_effects_significant <- e_significant
 
+# dump csv for the heatmap
 write.csv(fixed_effects, "/tmp/hm.csv")
+
+# trend year break
+national_data$all_break_output <- log(national_data$all_tot) -
+                              lag(log(national_data$all_tot))
+national_data$mmr_break_output <- log(national_data$mmr) -
+                              lag(log(national_data$mmr))
+national_data$tuberculosis_break_output <- log(national_data$tuberculosis_total) -
+                              lag(log(national_data$tuberculosis_total))
+national_data$inf_pne_break_output <- log(national_data$influenza_pneumonia_total) -
+                              lag(log(national_data$influenza_pneumonia_total))
+national_data$scarlet_break_output <- log(national_data$scarlet_fever_tot) -
+                              lag(log(national_data$scarlet_fever_tot))
+
+print("all,mmr,inf_pne,scarlet,tuberculosis")
+for (tau in 1933:1942) {
+  all_break_reg <- lm(all_break_output ~ I(year >= tau), data = national_data)
+  all_t_val <- summary(all_break_reg)$coefficients[,3][2]
+  
+  mmr_break_reg <- lm(mmr_break_output ~ I(year >= tau), data = national_data)
+  mmr_t_val <- summary(mmr_break_reg)$coefficients[,3][2]
+
+  inf_pne_break_reg <- lm(inf_pne_break_output ~ I(year >= tau), data = national_data)
+  inf_pne_t_val <- summary(inf_pne_break_reg)$coefficients[,3][2]
+
+  scarlet_break_reg <- lm(scarlet_break_output ~ I(year >= tau), data = national_data)
+  scarlet_t_val <- summary(scarlet_break_reg)$coefficients[,3][2]
+
+  tub_break_reg <- lm(tuberculosis_break_output ~ I(year >= tau), data = national_data)
+  tub_t_val <- summary(tub_break_reg)$coefficients[,3][2]
+
+  print(sprintf("%s,%s,%s,%s,%s,%s", tau, all_t_val, mmr_t_val, inf_pne_t_val, scarlet_t_val, tub_t_val))
+}
+
+for (tau in 14:23) {
+  fstat <- sctest(
+    national_data$mmr_break_output ~ 1,
+    type = "Chow",
+    point = tau
+  )[1]
+  print(sprintf("%s - %s", tau, fstat))
+}
+
+coeftest(all_break_reg, vcov.=NeweyWest(all_break_reg, lag=0, adjust=TRUE, verbose=TRUE))
