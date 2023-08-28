@@ -7,6 +7,7 @@ library(stargazer)
 library(strucchange)
 library(coeftest)
 library(lmtest)
+library(pwrss)
 
 rm(list = ls())
 options(scipen = 999)
@@ -55,14 +56,14 @@ for (i in seq(-11, 6)) {
 }
 
 ev_study_mmr <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-          beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(state):year + disease, 
-          data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "tb_rate")))
+          beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(year) + factor(state):year + disease, 
+          data = filter(subset_state_data_1925_1943_long, 1925 <= year & (disease %in% c("mmr", "tb_rate"))))
 summary(ev_study_mmr)
 stargazer(coef(summary(ev_study_mmr))[, 1:2], flip = TRUE)
 
 ev_study_inf_pne <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(state):year + disease,
-               data = filter(subset_state_data_1925_1943_long, disease %in% c("infl_pneumonia_rate", "tb_rate")))
+                        beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(year) + factor(state):year + disease,
+               data = filter(subset_state_data_1925_1943_long,1925 <= year & (disease %in% c("infl_pneumonia_rate", "tb_rate"))))
 summary(ev_study_inf_pne)
 stargazer(coef(summary(ev_study_inf_pne))[, 1:2], flip = TRUE)
 
@@ -95,26 +96,53 @@ fixed_effects <- fixed_effects[c("state", "diff")]
 # state data seperate regression
 e_all <- c()
 e_significant <- c()
+e_power <- c()
 for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct())$state) {
-  reg <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37, 
-               data = filter(subset_state_data_1925_1943_long, state == state_s & disease %in% c("mmr", "tb_rate")))
-  
+  filtered_data <- filter(
+    subset_state_data_1925_1943_long,
+    # state == state_s & disease %in% c("mmr", "tb_rate")
+    # state == state_s & disease %in% c("scarfever_rate", "tb_rate")
+    state == state_s & disease %in% c("infl_pneumonia_rate", "tb_rate")
+  )
+
+  reg <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated +
+  year_c + post37, data = filtered_data)
+
   lh <- linearHypothesis(reg, c(
     "treatedTRUE:post37TRUE=0"
   ), white.adjust = "hc1")
 
-  e_all <- c(e_all, reg$coefficients["treatedTRUE:post37TRUE"])
+  effect <- reg$coefficients["treatedTRUE:post37TRUE"]
+
+  # power analysis
+  p <- pwrss.t.reg(
+    beta1 = effect,
+    # sdy = sd(filtered_data$lnm_rate, na.rm = T),
+    sdx = sqrt(0.5 * (1 - 0.5)), #summary(reg)$coefficients[5, 2]^2,
+    k = 5,
+    r2 = 0.5,
+    power = .7,
+    alpha = 0.05,
+    alternative = "not equal"
+  )
+
+  e_power <- c(e_power, p$n)
+
+  # store effect and whether significant
+  e_all <- c(e_all, effect)
   if (lh$"Pr(>F)"[2] < 0.05) {
-    e_significant <- c(e_significant, reg$coefficients["treatedTRUE:post37TRUE"])
+    e_significant <- c(e_significant, effect)
   } else {
     e_significant <- c(e_significant, 0)
   }
 }
 fixed_effects$seperate_effects_all <- e_all
 fixed_effects$seperate_effects_significant <- e_significant
+fixed_effects$power_sample_size <- e_power
 
 # dump csv for the heatmap
-write.csv(fixed_effects, "/tmp/hm.csv")
+rownames(fixed_effects) <- fixed_effects$state
+write.csv(fixed_effects, "/tmp/hm_infl.csv")
 
 # trend year break
 national_data$all_break_output <- log(national_data$all_tot) -
@@ -153,3 +181,5 @@ for (tau in 1933:1942) {
     scarlet_t_val=scarlet_t_val^2, tub_t_val=tub_t_val^2
   ))
 }
+
+pwrss.f.reg(r2 = 0.30, k = 3, power = 0.80, alpha = 0.05)
