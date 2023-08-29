@@ -24,12 +24,12 @@ library(lmtest)
 
 
 
-setwd("/Users/danielpollak/Library/CloudStorage/GoogleDrive-pollak.daniel@gmail.com/My Drive/University/Economics/Econometrics B/final_work")
+# setwd("/Users/danielpollak/Library/CloudStorage/GoogleDrive-pollak.daniel@gmail.com/My Drive/University/Economics/Econometrics B/final_work")
 
 
 ###Replication of table 2- structural break test###
 
-national_data <- read_dta("data/datasets/national_data.dta")
+national_data <- read_dta("final_work/data/datasets/20080229_national_data.dta")
 national_data$lnmmr <- log(national_data$mmr)
 national_data$lnpne <- log(national_data$influenza_pneumonia_total)
 national_data$lnsc <- log(national_data$scarlet_fever_tot)
@@ -75,7 +75,7 @@ print(national_data[c("lnmmr", "year", "break", "fstat", "sig")])
 
 ### Replication of table 1- summary statistics
 ##Panel A
-national_data <- read_dta("data/datasets/national_data.dta")
+national_data <- read_dta("final_work/data/datasets/20080229_national_data.dta")
 
 #average national mortality rate- all
 national_data_1920 <- subset(national_data, year == 1920)
@@ -202,7 +202,7 @@ print(summary_1937_1943_state_r)
 ###Replication of table 4- Diff-in-Diff results
 
 ##Panel A- National-level data, all years, 1925–1943
-national_data <- read_dta("data/datasets/national_data.dta")
+national_data <- read_dta("final_work/data/datasets/20080229_national_data.dta")
 # Filter the data to keep only the years between 1925 and 1943
 national_data_1925_1943 <- national_data %>%
   filter(year >= 1925 & year <= 1943)
@@ -227,6 +227,18 @@ subset_national_data_1925_1943_long <- subset_national_data_1925_1943_long %>%
 
 reg1 <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37, 
                data = filter(subset_national_data_1925_1943_long, disease %in% c("mmr", "tuberculosis_total")))
+
+p <- pwrss.t.reg(
+  beta1 = reg1$coefficients[5],
+  # sdy = sd(filtered_data$lnm_rate, na.rm = T),
+  sdx = sqrt(0.5 * (1 - 0.5)), #summary(reg)$coefficients[5, 2]^2,
+  k = 5,
+  r2 = 0.5,
+  power = .7,
+  alpha = 0.05,
+  alternative = "not equal"
+)
+
 reg2 <- lm(lnm_rate ~ treated:post37 + treated:year_c:post37 + treated:year_c + treated + year_c + post37, 
                data = filter(subset_national_data_1925_1943_long, disease %in% c("mmr", "tuberculosis_total")))
 reg3 <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37, 

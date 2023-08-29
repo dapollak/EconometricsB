@@ -5,9 +5,9 @@ library(lfe)
 library(car)
 library(stargazer)
 library(strucchange)
-library(coeftest)
 library(lmtest)
 library(pwrss)
+library(xtable)
 
 rm(list = ls())
 options(scipen = 999)
@@ -96,13 +96,15 @@ fixed_effects <- fixed_effects[c("state", "diff")]
 # state data seperate regression
 e_all <- c()
 e_significant <- c()
-e_power <- c()
+needed_sample <- c()
+se_vals <- c()
+p_vals <- c()
 for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct())$state) {
   filtered_data <- filter(
     subset_state_data_1925_1943_long,
-    # state == state_s & disease %in% c("mmr", "tb_rate")
+    state == state_s & disease %in% c("mmr", "tb_rate")
     # state == state_s & disease %in% c("scarfever_rate", "tb_rate")
-    state == state_s & disease %in% c("infl_pneumonia_rate", "tb_rate")
+    # state == state_s & disease %in% c("infl_pneumonia_rate", "tb_rate")
   )
 
   reg <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated +
@@ -126,7 +128,7 @@ for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct
     alternative = "not equal"
   )
 
-  e_power <- c(e_power, p$n)
+  needed_sample <- c(needed_sample, p$n)
 
   # store effect and whether significant
   e_all <- c(e_all, effect)
@@ -135,29 +137,39 @@ for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct
   } else {
     e_significant <- c(e_significant, 0)
   }
+
+  se_vals <- c(se_vals, summary(reg)$coefficients["treatedTRUE:post37TRUE","Std. Error"])
+  p_vals <- c(p_vals, summary(reg)$coefficients["treatedTRUE:post37TRUE","Pr(>|t|)"])
 }
 fixed_effects$seperate_effects_all <- e_all
 fixed_effects$seperate_effects_significant <- e_significant
-fixed_effects$power_sample_size <- e_power
+fixed_effects$power_sample_size <- needed_sample
+fixed_effects$se <- se_vals
+fixed_effects$p_vals <- p_vals
 
 # dump csv for the heatmap
 rownames(fixed_effects) <- fixed_effects$state
-write.csv(fixed_effects, "/tmp/hm_infl.csv")
+write.csv(fixed_effects, "/tmp/hm.csv")
+
+# power table
+power_table <- fixed_effects[c("seperate_effects_all", "power_sample_size")]
+power_table <- power_table[order(power_table$power_sample_size), ]
+xtable(power_table)
 
 # trend year break
 national_data$all_break_output <- log(national_data$all_tot) -
-                              lag(log(national_data$all_tot))
+                              dplyr::lag(log(national_data$all_tot))
 national_data$mmr_break_output <- log(national_data$mmr) -
-                              lag(log(national_data$mmr))
+                              dplyr::lag(log(national_data$mmr))
 national_data$tuberculosis_break_output <- log(national_data$tuberculosis_total) -
-                              lag(log(national_data$tuberculosis_total))
+                              dplyr::lag(log(national_data$tuberculosis_total))
 national_data$inf_pne_break_output <- log(national_data$influenza_pneumonia_total) -
-                              lag(log(national_data$influenza_pneumonia_total))
+                              dplyr::lag(log(national_data$influenza_pneumonia_total))
 national_data$scarlet_break_output <- log(national_data$scarlet_fever_tot) -
-                              lag(log(national_data$scarlet_fever_tot))
+                              dplyr::lag(log(national_data$scarlet_fever_tot))
 
 print("all,mmr,inf_pne,scarlet,tuberculosis")
-t_results <- data.frame()
+nation_trend_break <- data.frame()
 for (tau in 1933:1942) {
   all_break_reg <- lm(all_break_output ~ I(year >= tau), data = national_data)
   # all_t_val <- summary(all_break_reg)$coefficients[,3][2]
@@ -176,10 +188,38 @@ for (tau in 1933:1942) {
   tub_t_val <- coeftest(tub_break_reg, vcov.=NeweyWest(tub_break_reg, lag=1, adjust=T))[6]
 
   print(sprintf("%s,%s,%s,%s,%s,%s", tau, all_t_val^2, mmr_t_val^2, inf_pne_t_val^2, scarlet_t_val^2, tub_t_val^2))
-  t_results <- rbind(t_results, data.frame(
+  nation_trend_break <- rbind(nation_trend_break, data.frame(
     year=tau, all_t_val=all_t_val^2, mmr_t_val=mmr_t_val^2, inf_pne_t_val=inf_pne_t_val^2,
     scarlet_t_val=scarlet_t_val^2, tub_t_val=tub_t_val^2
   ))
 }
 
-pwrss.f.reg(r2 = 0.30, k = 3, power = 0.80, alpha = 0.05)
+# states trend year
+subset_state_data_1925_1943_long$break_output <- subset_state_data_1925_1943_long$lnm_rate - dplyr::lag(subset_state_data_1925_1943_long$lnm_rate)
+
+states_trend_break <- data.frame()
+for (state_s in subset_state_data_1925_1943_long$state[!duplicated(subset_state_data_1925_1943_long$state)]) {
+  state_f_stats <- data.frame()
+  for (tau in 1933:1940) {
+    mmr_break_reg <- lm(
+      break_output ~ I(year >= tau),
+      data = filter(subset_state_data_1925_1943_long, state == state_s & disease == "mmr")
+    )
+    tryCatch(
+      {
+        mmr_t_val <- coeftest(mmr_break_reg, vcov.=NeweyWest(mmr_break_reg, lag=1, adjust=T))[6]
+
+        state_f_stats <- rbind(state_f_stats, data.frame(
+         year=tau, f_stat=mmr_t_val^2
+    ))
+      },
+      error = function(e) { }
+    )
+  }
+
+  max_f_stat_row <- state_f_stats[which.max(state_f_stats$f_stat),]
+  states_trend_break <- rbind(states_trend_break, data.frame(
+      state=state_s, F_stat=max_f_stat_row$f_stat[1], year=max_f_stat_row$year[1]
+    ))
+}
+xtable(states_trend_break)
