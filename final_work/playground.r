@@ -197,9 +197,8 @@ for (tau in 1933:1942) {
 # states trend year
 subset_state_data_1925_1943_long$break_output <- subset_state_data_1925_1943_long$lnm_rate - dplyr::lag(subset_state_data_1925_1943_long$lnm_rate)
 
-states_trend_break <- data.frame()
+states_trend_break_full <- data.frame()
 for (state_s in subset_state_data_1925_1943_long$state[!duplicated(subset_state_data_1925_1943_long$state)]) {
-  state_f_stats <- data.frame()
   for (tau in 1933:1940) {
     mmr_break_reg <- lm(
       break_output ~ I(year >= tau),
@@ -209,17 +208,19 @@ for (state_s in subset_state_data_1925_1943_long$state[!duplicated(subset_state_
       {
         mmr_t_val <- coeftest(mmr_break_reg, vcov.=NeweyWest(mmr_break_reg, lag=1, adjust=T))[6]
 
-        state_f_stats <- rbind(state_f_stats, data.frame(
-         year=tau, f_stat=mmr_t_val^2
-    ))
+        states_trend_break_full <- rbind(
+          states_trend_break_full,
+          data.frame(state=state_s, year=tau, f_stat=mmr_t_val^2)
+        )
       },
       error = function(e) { }
     )
   }
-
-  max_f_stat_row <- state_f_stats[which.max(state_f_stats$f_stat),]
-  states_trend_break <- rbind(states_trend_break, data.frame(
-      state=state_s, F_stat=max_f_stat_row$f_stat[1], year=max_f_stat_row$year[1]
-    ))
 }
-xtable(states_trend_break)
+
+states_trend_break_max <- states_trend_break_full %>%
+            group_by(state) %>%
+            mutate(f_stat_max=max(f_stat)) %>%
+            filter(f_stat == f_stat_max)
+
+xtable(states_trend_break_max)
