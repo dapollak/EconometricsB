@@ -70,7 +70,7 @@ stargazer(coef(summary(ev_study_inf_pne))[, 1:2], flip = TRUE)
 subset_state_data_1925_1943_long[is.na(subset_state_data_1925_1943_long) | subset_state_data_1925_1943_long == Inf | subset_state_data_1925_1943_long == -Inf] <- NA
 
 ev_study_scarlet <- felm(lnm_rate ~ beta_min_5 + beta_min_4 + beta_min_3 + beta_min_2 + beta_min_1 + beta_0 +
-                        beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(state):year + disease,
+                        beta_1 + beta_2 + beta_3 + beta_4 + beta_5 + beta_6 | factor(year) + factor(state):year + disease,
                data = na.omit(filter(subset_state_data_1925_1943_long, (disease %in% c("scarfever_rate", "tb_rate")))))
 summary(ev_study_scarlet)
 stargazer(coef(summary(ev_study_scarlet))[, 1:2], flip = TRUE)
@@ -223,4 +223,5 @@ states_trend_break_max <- states_trend_break_full %>%
             mutate(f_stat_max=max(f_stat)) %>%
             filter(f_stat == f_stat_max)
 
+write.csv(states_trend_break_full, "/tmp/states_trend_break_full.csv")
 xtable(states_trend_break_max)
