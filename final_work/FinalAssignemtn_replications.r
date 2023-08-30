@@ -245,7 +245,7 @@ subset_state_data_1925_1943 <- state_data_1925_1943[, c("state", "year", "mmr", 
 subset_state_data_1925_1943_long <- subset_state_data_1925_1943 %>%
   pivot_longer(cols = c("mmr", "infl_pneumonia_rate", "scarfever_rate", "tb_rate"),
                names_to = "disease",
-               values_to = "m_rate") 
+               values_to = "m_rate")
 
 subset_state_data_1925_1943_long <- subset_state_data_1925_1943_long %>%
   mutate(treated = (disease == "mmr" | disease == "infl_pneumonia_rate" | disease == "scarfever_rate"),
@@ -276,10 +276,3 @@ reg12 <- felm(lnm_rate ~ treated:post37 + treated:year_c:post37 + treated:year_c
 table4_panel_b <- list(reg7, reg8, reg9, reg10, reg11, reg12)
 latex_code <- texreg(table4_panel_b)
 writeLines(latex_code, "table4_panel_b.tex")
-
-
-
-
-
-
-

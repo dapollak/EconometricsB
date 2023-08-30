@@ -82,6 +82,8 @@ stargazer(
   type = "latex"
 )
 
+#####################################
+
 # State data fixed effects
 state_fe <- felm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37 |state_post37| 0 | disease_year,
              data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "tb_rate")))
@@ -161,8 +163,10 @@ write.csv(states_data, "/tmp/heatmap_mmr.csv")
 # Table A.4
 power_table <- states_data[c("seperate_effects_all", "power_sample_size")]
 power_table <- power_table[order(power_table$power_sample_size), ]
+writeLines(xtable(power_table), "power.tex")
 
-# National trend year break paper replication (Table 3 & Figure 2 in our paper)
+
+## Table 3 & Figure 2 - National trend year break paper replication
 national_data$all_break_output <- log(national_data$all_tot) -
                               dplyr::lag(log(national_data$all_tot))
 national_data$mmr_break_output <- log(national_data$mmr) -
@@ -178,7 +182,6 @@ print("all,mmr,inf_pne,scarlet,tuberculosis")
 nation_trend_break <- data.frame()
 for (tau in 1933:1942) {
   all_break_reg <- lm(all_break_output ~ I(year >= tau), data = national_data)
-  # all_t_val <- summary(all_break_reg)$coefficients[,3][2]
   all_t_val <- coeftest(all_break_reg, vcov.=NeweyWest(all_break_reg, lag=1, adjust=T))[6]
   
   mmr_break_reg <- lm(mmr_break_output ~ I(year >= tau), data = national_data)
@@ -200,7 +203,27 @@ for (tau in 1933:1942) {
   ))
 }
 
-# States trend year break extension (Table A.2 in our paper)
+# Table 3
+replication_year <- data.frame(
+  year=c(
+    nation_trend_break[which.max(nation_trend_break$all_f_val),]$year,
+    nation_trend_break[which.max(nation_trend_break$mmr_f_val),]$year,
+    nation_trend_break[which.max(nation_trend_break$inf_pne_f_val),]$year,
+    nation_trend_break[which.max(nation_trend_break$scarlet_f_val),]$year,
+    nation_trend_break[which.max(nation_trend_break$tub_f_val),]$year
+  ),
+  f_stat=c(
+    nation_trend_break[which.max(nation_trend_break$all_f_val),]$all_f_val,
+    nation_trend_break[which.max(nation_trend_break$mmr_f_val),]$mmr_f_val,
+    nation_trend_break[which.max(nation_trend_break$inf_pne_f_val),]$inf_pne_f_val,
+    nation_trend_break[which.max(nation_trend_break$scarlet_f_val),]$scarlet_f_val,
+    nation_trend_break[which.max(nation_trend_break$tub_f_val),]$tub_f_val
+  )
+)
+rownames(replication_year) <- c("All", "MMR", "Influenza", "Scarlet", "Tuberculosis")
+writeLines(xtable(states_trend_break_max), "trend_break_table.tex")
+
+## Table A.2 - States trend year break extension
 subset_state_data_1925_1943_long$break_output <- subset_state_data_1925_1943_long$lnm_rate - dplyr::lag(subset_state_data_1925_1943_long$lnm_rate)
 
 states_trend_break_full <- data.frame()
@@ -231,3 +254,4 @@ states_trend_break_max <- states_trend_break_full %>%
 
 # Table A.2
 states_trend_break_max <- subset(states_trend_break_max, select = -c(f_stat_max))
+writeLines(xtable(states_trend_break_max), "states_year_break.tex")
