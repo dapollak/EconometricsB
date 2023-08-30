@@ -81,19 +81,20 @@ stargazer(
   ev_study_scarlet,
   type = "latex"
 )
+
 # State data fixed effects
 state_fe <- felm(lnm_rate ~ treated:post37 + treated:year_c + treated + year_c + post37 |state_post37| 0 | disease_year,
              data = filter(subset_state_data_1925_1943_long, disease %in% c("mmr", "tb_rate")))
 
-fixed_effects <- getfe(state_fe)
-fixed_effects$diff <- lead(c$effect, 48, 1) - c$effect
-fixed_effects <- fixed_effects[1:48,]
-fixed_effects$state <- (subset_state_data_1925_1943_long %>%
+states_data <- getfe(state_fe)
+states_data$diff <- dplyr::lead(c$effect, 48, 1) - c$effect
+states_data <- states_data[1:48,]
+states_data$state <- (subset_state_data_1925_1943_long %>%
                         select(state) %>%
                         distinct())$state
-fixed_effects <- fixed_effects[c("state", "diff")]
+states_data <- states_data[c("state", "diff")]
 
-# state data seperate regression
+# state data seperate regression (Table A.1 & Table A.4 & Figure 9)
 e_all <- c()
 e_significant <- c()
 needed_sample <- c()
@@ -103,8 +104,6 @@ for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct
   filtered_data <- filter(
     subset_state_data_1925_1943_long,
     state == state_s & disease %in% c("mmr", "tb_rate")
-    # state == state_s & disease %in% c("scarfever_rate", "tb_rate")
-    # state == state_s & disease %in% c("infl_pneumonia_rate", "tb_rate")
   )
 
   reg <- lm(lnm_rate ~ treated:post37 + treated:year_c + treated +
@@ -141,22 +140,29 @@ for (state_s in (subset_state_data_1925_1943_long %>% select(state) %>% distinct
   se_vals <- c(se_vals, summary(reg)$coefficients["treatedTRUE:post37TRUE","Std. Error"])
   p_vals <- c(p_vals, summary(reg)$coefficients["treatedTRUE:post37TRUE","Pr(>|t|)"])
 }
-fixed_effects$seperate_effects_all <- e_all
-fixed_effects$seperate_effects_significant <- e_significant
-fixed_effects$power_sample_size <- needed_sample
-fixed_effects$se <- se_vals
-fixed_effects$p_vals <- p_vals
+states_data$seperate_effects_all <- e_all
+states_data$seperate_effects_significant <- e_significant
+states_data$power_sample_size <- needed_sample
+states_data$se <- se_vals
+states_data$p_vals <- p_vals
+rownames(states_data) <- states_data$state
+
+# States Effect (Table A.1, has data for Figure 3)
+states_effects <- states_data[c(
+  "seperate_effects_all",
+  "seperate_effects_significant",
+  "se",
+  "p_vals"
+)]
 
 # dump csv for the heatmap
-rownames(fixed_effects) <- fixed_effects$state
-write.csv(fixed_effects, "/tmp/hm.csv")
+write.csv(states_data, "/tmp/heatmap_mmr.csv")
 
-# power table
-power_table <- fixed_effects[c("seperate_effects_all", "power_sample_size")]
+# Table A.4
+power_table <- states_data[c("seperate_effects_all", "power_sample_size")]
 power_table <- power_table[order(power_table$power_sample_size), ]
-xtable(power_table)
 
-# trend year break
+# National trend year break paper replication (Table 3 & Figure 2 in our paper)
 national_data$all_break_output <- log(national_data$all_tot) -
                               dplyr::lag(log(national_data$all_tot))
 national_data$mmr_break_output <- log(national_data$mmr) -
@@ -189,12 +195,12 @@ for (tau in 1933:1942) {
 
   print(sprintf("%s,%s,%s,%s,%s,%s", tau, all_t_val^2, mmr_t_val^2, inf_pne_t_val^2, scarlet_t_val^2, tub_t_val^2))
   nation_trend_break <- rbind(nation_trend_break, data.frame(
-    year=tau, all_t_val=all_t_val^2, mmr_t_val=mmr_t_val^2, inf_pne_t_val=inf_pne_t_val^2,
-    scarlet_t_val=scarlet_t_val^2, tub_t_val=tub_t_val^2
+    year=tau, all_f_val=all_t_val^2, mmr_f_val=mmr_t_val^2, inf_pne_f_val=inf_pne_t_val^2,
+    scarlet_f_val=scarlet_t_val^2, tub_f_val=tub_t_val^2
   ))
 }
 
-# states trend year
+# States trend year break extension (Table A.2 in our paper)
 subset_state_data_1925_1943_long$break_output <- subset_state_data_1925_1943_long$lnm_rate - dplyr::lag(subset_state_data_1925_1943_long$lnm_rate)
 
 states_trend_break_full <- data.frame()
@@ -223,5 +229,5 @@ states_trend_break_max <- states_trend_break_full %>%
             mutate(f_stat_max=max(f_stat)) %>%
             filter(f_stat == f_stat_max)
 
-write.csv(states_trend_break_full, "/tmp/states_trend_break_full.csv")
-xtable(states_trend_break_max)
+# Table A.2
+states_trend_break_max <- subset(states_trend_break_max, select = -c(f_stat_max))
