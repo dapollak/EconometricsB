@@ -29,7 +29,7 @@ library(fixest)
 
 
 
-setwd("G:/האחסון שלי/לימודים/אקונומטריקה/אקונומטריקה ב/פרויקט גמר/AEJApp_Datasets")
+setwd("/Users/danielpollak/Library/CloudStorage/GoogleDrive-pollak.daniel@gmail.com/My Drive/University/Economics/Econometrics B/final_work/data/datasets")
 
 ### Sub section- Descriptive Statistics
 
@@ -186,12 +186,12 @@ replication_year <- data.frame(
   )
 )
 rownames(replication_year) <- c("All", "MMR", "Influenza", "Scarlet", "Tuberculosis")
-writeLines(xtable(states_trend_break_max), "trend_break_table.tex")
+writeLines(print(xtable(replication_year)), "trend_break_table.tex")
 
 ## Figure 2- Trend break year test results
-write.csv(states_data, "break_year.csv")
+write.csv(nation_trend_break, "break_year.csv")
 
-### Sub section- Main results  
+### Sub section- Main results
 
 ## Table 4 - Replication of table 4 Panel A
 
