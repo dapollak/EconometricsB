@@ -29,7 +29,7 @@ library(fixest)
 
 
 
-setwd("/Users/danielpollak/Library/CloudStorage/GoogleDrive-pollak.daniel@gmail.com/My Drive/University/Economics/Econometrics B/final_work/data/datasets")
+setwd("G:/האחסון שלי/לימודים/אקונומטריקה/אקונומטריקה ב/פרויקט גמר/AEJApp_Datasets")
 
 ### Sub section- Descriptive Statistics
 
